@@ -104,12 +104,6 @@ jobs:
           text = text.replace('usage: /miracrates [create|givecrate|help]', 'usage: /miracrates [create|givecrate|remove|help]', 1)
           plugin.write_text(text)
 
-          workflow = Path('.github/workflows/build.yml')
-          text = workflow.read_text()
-          if 'MiraCrates-0.3.0.jar' not in text:
-              raise SystemExit('Unexpected build artifact path')
-          workflow.write_text(text.replace('MiraCrates-0.3.0.jar', 'MiraCrates-0.3.1.jar'))
-
           readme = Path('README.md')
           text = readme.read_text()
           if '**v0.3.0**' in text:
@@ -145,7 +139,6 @@ jobs:
           git add src/main/java/com/mira/crates/command/MiraCratesCommand.java \
                   src/main/resources/plugin.yml \
                   build.gradle.kts \
-                  .github/workflows/build.yml \
                   README.md
           git commit -m "Add physical crate remove command"
           git push origin HEAD:main
