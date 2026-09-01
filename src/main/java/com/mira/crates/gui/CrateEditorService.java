@@ -14,13 +14,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.event.inventory.InventoryType;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class CrateEditorService {
     private static final int REWARD_FIRST_SLOT = 27;
@@ -31,6 +30,7 @@ public final class CrateEditorService {
     private final DefinitionService definitions;
     private final CrateItemService crateItems;
     private final Map<UUID, Draft> sessions = new HashMap<>();
+    private final Set<UUID> awaitingNameInput = ConcurrentHashMap.newKeySet();
 
     public CrateEditorService(MiraCore core, DefinitionService definitions, CrateItemService crateItems) {
         this.core = core;
@@ -39,6 +39,7 @@ public final class CrateEditorService {
     }
 
     public void startCreate(Player player) {
+        awaitingNameInput.remove(player.getUniqueId());
         sessions.put(player.getUniqueId(), new Draft(null, "&fNew Crate", Material.PURPLE_SHULKER_BOX,
                 new ArrayList<>(), new ArrayList<>()));
         openEditor(player);
@@ -59,10 +60,42 @@ public final class CrateEditorService {
                 preserved.add(reward);
             }
         }
+        awaitingNameInput.remove(player.getUniqueId());
         sessions.put(player.getUniqueId(), new Draft(crate.id(), crate.displayName(),
                 ShulkerMaterials.normalise(crate.icon()), itemRewards, preserved));
         openEditor(player);
         return true;
+    }
+
+    public boolean isAwaitingName(UUID playerId) {
+        return awaitingNameInput.contains(playerId);
+    }
+
+    public void submitChatName(Player player, String message) {
+        UUID playerId = player.getUniqueId();
+        if (!awaitingNameInput.remove(playerId)) return;
+
+        Draft draft = sessions.get(playerId);
+        if (draft == null) {
+            core.messages().send(player, "&cThat crate editing session expired. Run /mcrates create again.");
+            return;
+        }
+
+        String rename = message == null ? "" : message.trim();
+        if (rename.isBlank()) {
+            awaitingNameInput.add(playerId);
+            core.messages().send(player, "&cCrate name cannot be blank. Type a crate name in chat.");
+            return;
+        }
+        if (rename.length() > 48) rename = rename.substring(0, 48);
+
+        draft.displayName = containsLegacyColour(rename) ? rename : "&f" + rename;
+        core.messages().send(player, "&aCrate name set to &f" + stripLegacy(draft.displayName) + "&a.");
+        openEditor(player);
+    }
+
+    public void cancelNameInput(UUID playerId) {
+        awaitingNameInput.remove(playerId);
     }
 
     public void handleClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
@@ -75,7 +108,6 @@ public final class CrateEditorService {
 
         switch (holder.type()) {
             case CRATE_EDITOR -> handleEditorClick(player, event, draft);
-            case CRATE_NAME -> handleNameClick(player, event, draft);
             case CRATE_CHANCE -> handleChanceClick(player, holder, event, draft);
             default -> { }
         }
@@ -84,7 +116,9 @@ public final class CrateEditorService {
     private void handleEditorClick(Player player, InventoryClickEvent event, Draft draft) {
         int slot = event.getRawSlot();
         if (slot == 10) {
-            openNameEditor(player, draft);
+            awaitingNameInput.add(player.getUniqueId());
+            player.closeInventory();
+            core.messages().send(player, "&eType the crate name in chat. &7Your message will be hidden from everyone and used only as the crate name.");
             return;
         }
         if (slot == 12) {
@@ -135,24 +169,11 @@ public final class CrateEditorService {
             return;
         }
         if (slot == 50) {
+            awaitingNameInput.remove(player.getUniqueId());
             sessions.remove(player.getUniqueId());
             player.closeInventory();
             core.messages().send(player, "&eCrate edit cancelled.");
         }
-    }
-
-    private void handleNameClick(Player player, InventoryClickEvent event, Draft draft) {
-        if (event.getRawSlot() != 2) return;
-        if (!(event.getView().getTopInventory() instanceof AnvilInventory anvil)) return;
-        String rename = anvil.getRenameText();
-        if (rename == null || rename.isBlank()) {
-            core.messages().send(player, "&cCrate name cannot be blank.");
-            return;
-        }
-        rename = rename.trim();
-        if (rename.length() > 48) rename = rename.substring(0, 48);
-        draft.displayName = containsLegacyColour(rename) ? rename : "&f" + rename;
-        openEditor(player);
     }
 
     private void handleChanceClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event, Draft draft) {
@@ -204,7 +225,8 @@ public final class CrateEditorService {
 
         inventory.setItem(10, GuiItems.item(Material.NAME_TAG, core.messages().parse("&fCrate Name"), List.of(
                 line("&7Current: " + draft.displayName),
-                line("&eClick to type a new name"))));
+                line("&eClick, then type the new name in chat"),
+                line("&7The chat message will not be broadcast."))));
         inventory.setItem(12, GuiItems.item(draft.shulker, core.messages().parse("&fShulker Colour"), List.of(
                 line("&7Current: &f" + ShulkerMaterials.pretty(draft.shulker)),
                 line("&eLeft-click: next colour"),
@@ -232,18 +254,6 @@ public final class CrateEditorService {
                 line("&7Right-click a reward to remove it."))));
         inventory.setItem(50, GuiItems.item(Material.BARRIER, core.messages().parse("&cCancel"), List.of(
                 line("&7Discard this editing session."))));
-        player.openInventory(inventory);
-    }
-
-    private void openNameEditor(Player player, Draft draft) {
-        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_NAME, "", 0);
-        Inventory inventory = Bukkit.createInventory(holder, InventoryType.ANVIL, core.messages().parse("&5Set Crate Name"));
-        holder.bind(inventory);
-        ItemStack nameTag = new ItemStack(Material.NAME_TAG);
-        ItemMeta meta = nameTag.getItemMeta();
-        meta.displayName(Component.text(stripLegacy(draft.displayName)).decoration(TextDecoration.ITALIC, false));
-        nameTag.setItemMeta(meta);
-        inventory.setItem(0, nameTag);
         player.openInventory(inventory);
     }
 
@@ -313,6 +323,7 @@ public final class CrateEditorService {
             return;
         }
 
+        awaitingNameInput.remove(player.getUniqueId());
         sessions.remove(player.getUniqueId());
         player.closeInventory();
         crateItems.give(player, crateId);
