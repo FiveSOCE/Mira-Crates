@@ -45,7 +45,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         openings = new OpeningService(this, core, definitions, keys, rewards, playerData, history);
         crateItems = new CrateItemService(this, core, definitions);
         crateEditor = new CrateEditorService(core, definitions, crateItems);
-        editor = new EditorMenuService(core, definitions, locations, previews, crateEditor, crateItems);
+        editor = new EditorMenuService(core, definitions, locations, previews, crateEditor, crateItems, keys);
         api = new MiraCratesApiImpl(definitions, keys, openings);
 
         core.modules().register(this, "MiraCrates");
