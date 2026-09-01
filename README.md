@@ -4,13 +4,20 @@ MiraCrates is the GUI-first crate, key and reward engine for the Mira Minecraft 
 
 ## Download
 
-[**Download MiraCrates v0.2.0**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.2.0/MiraCrates-0.2.0.jar)
+[**Download MiraCrates v0.2.1**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.2.1/MiraCrates-0.2.1.jar)
 
-Current release: **v0.2.0**
+Current release: **v0.2.1**
 
-## v0.2.0 crate workflow
+## v0.2.1 interaction hotfix
 
-Every MiraCrates crate is now represented by a designated coloured shulker box.
+v0.2.1 fixes the two primary crate-creator interaction issues from v0.2.0:
+
+- the crate-name anvil now produces a clickable confirmation result while the administrator types, and clicking that result commits the name and returns to the crate editor
+- normal left/right clicks in the administrator's own inventory are now allowed while the crate editor is open, so reward items can be picked up onto the cursor; unsafe transfer paths such as shift-click and hotbar swapping remain blocked
+
+## v0.2 crate workflow
+
+Every MiraCrates crate is represented by a designated coloured shulker box.
 
 Normal administration is intentionally GUI-first:
 
@@ -48,9 +55,9 @@ Run:
 
 In the GUI:
 
-1. Click **Crate Name** and type the name through the anvil naming interface.
+1. Click **Crate Name**, type the name in the anvil interface, then click the result name tag to confirm it.
 2. Left/right-click **Shulker Colour** to cycle through the sixteen coloured shulker boxes.
-3. Put the item you want to use as a reward on your cursor and click **Add Reward Item**. The item is copied, not consumed.
+3. Use normal left/right clicks in your own inventory to put the reward item on your cursor, then click **Add Reward Item**. The item is copied, not consumed.
 4. Click a reward item to edit its chance. Right-click a reward to remove it.
 5. Use **Auto Balance Chances** whenever useful.
 6. Once the displayed total is exactly 100%, click **Save Crate**.
@@ -92,7 +99,7 @@ By default:
 
 ## Managing crates through `/mcrates`
 
-The Crates browser is now an editor rather than a read-only list.
+The Crates browser is an editor rather than a read-only list.
 
 On a crate entry:
 
@@ -114,7 +121,7 @@ Sword x1      20%
 
 has a 50/30/20 item reward split.
 
-The underlying v0.1 reward engine remains available for advanced integrations, including:
+The underlying reward engine remains available for advanced integrations, including:
 
 - item rewards
 - console-command rewards
@@ -185,7 +192,7 @@ plugins/MiraCrates/
 
 ## Architecture
 
-Crate definitions, keys, rewards, opening logic and physical placements remain separate internally. The v0.2.0 shulker item is a deployable representation of a crate definition, not a hardcoded crate class.
+Crate definitions, keys, rewards, opening logic and physical placements remain separate internally. The shulker item is a deployable representation of a crate definition, not a hardcoded crate class.
 
 This keeps future GUI work such as key editors, command-reward editors, milestones and opening-style editors from requiring a redesign of the crate engine.
 
@@ -200,7 +207,7 @@ The build pins and SHA-256 verifies the released MiraCore 0.1.0 and MiraSpawners
 Output:
 
 ```text
-build/libs/MiraCrates-0.2.0.jar
+build/libs/MiraCrates-0.2.1.jar
 ```
 
 GitHub Actions compiles and tests MiraCrates with Java 21 against Paper 1.21.11.
