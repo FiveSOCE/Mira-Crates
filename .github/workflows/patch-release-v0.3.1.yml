@@ -1,0 +1,162 @@
+name: Patch and Release v0.3.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-release-v0.3.1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+
+      - name: Apply v0.3.1 patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          command = Path('src/main/java/com/mira/crates/command/MiraCratesCommand.java')
+          text = command.read_text()
+
+          old = '            case "givecrate" -> giveCrate(sender, args);\n'
+          new = old + '            case "remove" -> removePhysicalCrate(sender);\n'
+          if old not in text:
+              raise SystemExit('Could not find givecrate switch anchor')
+          text = text.replace(old, new, 1)
+
+          anchor = '    private void previewCommand(CommandSender sender, String[] args) {\n'
+          method = '''    private void removePhysicalCrate(CommandSender sender) {
+              if (!(sender instanceof Player player)) {
+                  core.messages().send(sender, "&cThis command must be run by a player.");
+                  return;
+              }
+
+              int distance = Math.max(1, plugin.getConfig().getInt("interaction.target-distance", 6));
+              org.bukkit.block.Block target = player.getTargetBlockExact(distance);
+              if (target == null) {
+                  core.messages().send(sender, "&cLook directly at a placed MiraCrates shulker within " + distance + " blocks.");
+                  return;
+              }
+
+              Optional<String> crateId = locations.at(target).map(CrateLocation::crateId);
+              if (crateId.isEmpty()) crateId = crateItems.crateId(target);
+              if (crateId.isEmpty() || !(target.getState() instanceof org.bukkit.block.ShulkerBox shulkerBox)) {
+                  core.messages().send(sender, "&cThat block is not a placed MiraCrates crate.");
+                  return;
+              }
+
+              shulkerBox.getInventory().clear();
+              locations.remove(target);
+              target.setType(Material.AIR, false);
+              core.messages().send(sender, "&aRemoved placed crate &f" + crateId.get() + "&a. The crate definition was not deleted.");
+          }
+
+'''
+          if anchor not in text:
+              raise SystemExit('Could not find previewCommand anchor')
+          text = text.replace(anchor, method + anchor, 1)
+
+          old_help = '        core.messages().send(sender, "&f/mcrates givecrate <crate name> &7- Give yourself its deployable shulker");\n'
+          new_help = old_help + '        core.messages().send(sender, "&f/mcrates remove &7- Remove the placed crate you are looking at");\n'
+          if old_help not in text:
+              raise SystemExit('Could not find help anchor')
+          text = text.replace(old_help, new_help, 1)
+
+          old_tabs = '            return match(args[0], List.of("create", "givecrate", "help", "info", "test", "reload", "preview", "open", "crate", "key", "rarity", "reward"));'
+          new_tabs = '            return match(args[0], List.of("create", "givecrate", "remove", "help", "info", "test", "reload", "preview", "open", "crate", "key", "rarity", "reward"));'
+          if old_tabs not in text:
+              raise SystemExit('Could not find tab completion anchor')
+          text = text.replace(old_tabs, new_tabs, 1)
+          command.write_text(text)
+
+          build = Path('build.gradle.kts')
+          text = build.read_text()
+          if 'version = "0.3.0"' not in text:
+              raise SystemExit('Unexpected Gradle version')
+          build.write_text(text.replace('version = "0.3.0"', 'version = "0.3.1"', 1))
+
+          plugin = Path('src/main/resources/plugin.yml')
+          text = plugin.read_text()
+          if 'version: 0.3.0' not in text:
+              raise SystemExit('Unexpected plugin.yml version')
+          text = text.replace('version: 0.3.0', 'version: 0.3.1', 1)
+          text = text.replace('usage: /miracrates [create|givecrate|help]', 'usage: /miracrates [create|givecrate|remove|help]', 1)
+          plugin.write_text(text)
+
+          workflow = Path('.github/workflows/build.yml')
+          text = workflow.read_text()
+          if 'MiraCrates-0.3.0.jar' not in text:
+              raise SystemExit('Unexpected build artifact path')
+          workflow.write_text(text.replace('MiraCrates-0.3.0.jar', 'MiraCrates-0.3.1.jar'))
+
+          readme = Path('README.md')
+          text = readme.read_text()
+          if '**v0.3.0**' in text:
+              text = text.replace('**v0.3.0**', '**v0.3.1**', 1)
+          section_anchor = '## v0.3.0 key and opening workflow'
+          section = '''## v0.3.1 physical crate removal
+
+Administrators can remove one deployed crate instance with:
+
+```text
+/mcrates remove
+```
+
+Look directly at the placed MiraCrates shulker and run the command. The physical shulker is removed and its saved location is unregistered. The crate definition, companion key, rewards, and any other placed copies of that crate remain untouched. No crate item is returned by this command.
+
+'''
+          if '## v0.3.1 physical crate removal' not in text and section_anchor in text:
+              text = text.replace(section_anchor, section + section_anchor, 1)
+          text = text.replace('releases/download/v0.3.0/MiraCrates-0.3.0.jar', 'releases/download/v0.3.1/MiraCrates-0.3.1.jar', 1)
+          text = text.replace('build/libs/MiraCrates-0.3.0.jar', 'build/libs/MiraCrates-0.3.1.jar')
+          readme.write_text(text)
+          PY
+
+      - name: Test and build patched source
+        run: gradle clean test build --stacktrace
+
+      - name: Commit patched source
+        shell: bash
+        run: |
+          git config user.name "FiveS"
+          git config user.email "sgmmsionide@gmail.com"
+          git add src/main/java/com/mira/crates/command/MiraCratesCommand.java \
+                  src/main/resources/plugin.yml \
+                  build.gradle.kts \
+                  .github/workflows/build.yml \
+                  README.md
+          git commit -m "Add physical crate remove command"
+          git push origin HEAD:main
+          echo "release_sha=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create v0.3.1 \
+            build/libs/MiraCrates-0.3.1.jar \
+            --target "$release_sha" \
+            --title "MiraCrates v0.3.1" \
+            --notes "Adds /mcrates remove. Administrators can look directly at a deployed MiraCrates shulker and remove that physical instance without deleting the crate definition, companion key, rewards, or other placed copies. The command unregisters the saved location and gives no crate item back."
