@@ -4,9 +4,19 @@ MiraCrates is the GUI-first crate, key and reward engine for the Mira Minecraft 
 
 ## Download
 
-[**Download MiraCrates v0.3.0**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.0/MiraCrates-0.3.0.jar)
+[**Download MiraCrates v0.3.0**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.1/MiraCrates-0.3.1.jar)
 
-Current release: **v0.3.0**
+Current release: **v0.3.1**
+
+## v0.3.1 physical crate removal
+
+Administrators can remove one deployed crate instance with:
+
+```text
+/mcrates remove
+```
+
+Look directly at the placed MiraCrates shulker and run the command. The physical shulker is removed and its saved location is unregistered. The crate definition, companion key, rewards, and any other placed copies of that crate remain untouched. No crate item is returned by this command.
 
 ## v0.3.0 key and opening workflow
 
@@ -229,7 +239,7 @@ The build pins and SHA-256 verifies the released MiraCore 0.1.0 and MiraSpawners
 Output:
 
 ```text
-build/libs/MiraCrates-0.3.0.jar
+build/libs/MiraCrates-0.3.1.jar
 ```
 
 GitHub Actions compiles and tests MiraCrates with Java 21 against Paper 1.21.11.

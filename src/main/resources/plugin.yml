@@ -1,5 +1,5 @@
 name: MiraCrates
-version: 0.3.0
+version: 0.3.1
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
@@ -10,7 +10,7 @@ softdepend: [MiraSpawners]
 commands:
   miracrates:
     description: MiraCrates editor, administration and diagnostics.
-    usage: /miracrates [create|givecrate|help]
+    usage: /miracrates [create|givecrate|remove|help]
     aliases: [mcrates, mcrate]
     permission: miracrates.admin
 

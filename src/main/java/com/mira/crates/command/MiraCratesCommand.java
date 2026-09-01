@@ -61,6 +61,7 @@ public final class MiraCratesCommand implements TabExecutor {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "create" -> createGui(sender);
             case "givecrate" -> giveCrate(sender, args);
+            case "remove" -> removePhysicalCrate(sender);
             case "help" -> sendHelp(sender);
             case "info" -> sendInfo(sender);
             case "test" -> runSelfTest(sender);
@@ -103,6 +104,32 @@ public final class MiraCratesCommand implements TabExecutor {
         }
         core.messages().send(sender, "&aGave you crate &f" + id + "&a. Place the shulker anywhere to deploy it.");
     }
+
+    private void removePhysicalCrate(CommandSender sender) {
+    if (!(sender instanceof Player player)) {
+        core.messages().send(sender, "&cThis command must be run by a player.");
+        return;
+    }
+
+    int distance = Math.max(1, plugin.getConfig().getInt("interaction.target-distance", 6));
+    org.bukkit.block.Block target = player.getTargetBlockExact(distance);
+    if (target == null) {
+        core.messages().send(sender, "&cLook directly at a placed MiraCrates shulker within " + distance + " blocks.");
+        return;
+    }
+
+    Optional<String> crateId = locations.at(target).map(CrateLocation::crateId);
+    if (crateId.isEmpty()) crateId = crateItems.crateId(target);
+    if (crateId.isEmpty() || !(target.getState() instanceof org.bukkit.block.ShulkerBox shulkerBox)) {
+        core.messages().send(sender, "&cThat block is not a placed MiraCrates crate.");
+        return;
+    }
+
+    shulkerBox.getInventory().clear();
+    locations.remove(target);
+    target.setType(Material.AIR, false);
+    core.messages().send(sender, "&aRemoved placed crate &f" + crateId.get() + "&a. The crate definition was not deleted.");
+}
 
     private void previewCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -369,6 +396,7 @@ public final class MiraCratesCommand implements TabExecutor {
         core.messages().send(sender, "&f/mcrates &7- Open the editor");
         core.messages().send(sender, "&f/mcrates create &7- Create a crate through the GUI");
         core.messages().send(sender, "&f/mcrates givecrate <crate name> &7- Give yourself its deployable shulker");
+        core.messages().send(sender, "&f/mcrates remove &7- Remove the placed crate you are looking at");
         core.messages().send(sender, "&f/mcrates info|test|reload &7- Diagnostics/admin recovery");
         core.messages().send(sender, "&8Advanced key/reward commands remain available for integrations not yet exposed in the GUI.");
     }
@@ -426,7 +454,7 @@ public final class MiraCratesCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!sender.hasPermission("miracrates.admin")) return List.of();
         if (args.length == 1) {
-            return match(args[0], List.of("create", "givecrate", "help", "info", "test", "reload", "preview", "open", "crate", "key", "rarity", "reward"));
+            return match(args[0], List.of("create", "givecrate", "remove", "help", "info", "test", "reload", "preview", "open", "crate", "key", "rarity", "reward"));
         }
         String root = args[0].toLowerCase(Locale.ROOT);
         if ((root.equals("givecrate") || root.equals("preview") || root.equals("open")) && args.length == 2) {
