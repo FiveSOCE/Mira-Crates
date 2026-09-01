@@ -4,7 +4,7 @@ MiraCrates is the GUI-first crate, key and reward engine for the Mira Minecraft 
 
 ## Download
 
-[**Download MiraCrates v0.3.0**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.1/MiraCrates-0.3.1.jar)
+[**Download MiraCrates v0.3.1**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.1/MiraCrates-0.3.1.jar)
 
 Current release: **v0.3.1**
 
@@ -192,6 +192,7 @@ Normal administration is intentionally GUI-first.
 /mcrates
 /mcrates create
 /mcrates givecrate <crate name>
+/mcrates remove
 /mcrates help
 /mcrates info
 /mcrates test
