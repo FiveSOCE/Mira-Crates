@@ -72,7 +72,7 @@ jobs:
               core.messages().send(sender, "&aRemoved placed crate &f" + crateId.get() + "&a. The crate definition was not deleted.");
           }
 
-'''
+          '''
           if anchor not in text:
               raise SystemExit('Could not find previewCommand anchor')
           text = text.replace(anchor, method + anchor, 1)
@@ -117,15 +117,16 @@ jobs:
           section_anchor = '## v0.3.0 key and opening workflow'
           section = '''## v0.3.1 physical crate removal
 
-Administrators can remove one deployed crate instance with:
+          Administrators can remove one deployed crate instance with:
 
-```text
-/mcrates remove
-```
+          ```text
+          /mcrates remove
+          ```
 
-Look directly at the placed MiraCrates shulker and run the command. The physical shulker is removed and its saved location is unregistered. The crate definition, companion key, rewards, and any other placed copies of that crate remain untouched. No crate item is returned by this command.
+          Look directly at the placed MiraCrates shulker and run the command. The physical shulker is removed and its saved location is unregistered. The crate definition, companion key, rewards, and any other placed copies of that crate remain untouched. No crate item is returned by this command.
 
-'''
+          '''
+          section = '\n'.join(line[10:] if line.startswith('          ') else line for line in section.splitlines()) + '\n'
           if '## v0.3.1 physical crate removal' not in text and section_anchor in text:
               text = text.replace(section_anchor, section + section_anchor, 1)
           text = text.replace('releases/download/v0.3.0/MiraCrates-0.3.0.jar', 'releases/download/v0.3.1/MiraCrates-0.3.1.jar', 1)
