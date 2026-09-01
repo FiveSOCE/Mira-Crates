@@ -38,6 +38,15 @@ public final class OpeningService {
     }
 
     public boolean attemptOpen(Player player, String crateId, boolean bypassRequirements) {
+        return attemptOpen(player, crateId, bypassRequirements, false, false);
+    }
+
+    public boolean attemptPhysicalOpen(Player player, String crateId, boolean quickOpen) {
+        return attemptOpen(player, crateId, false, quickOpen, true);
+    }
+
+    private boolean attemptOpen(Player player, String crateId, boolean bypassRequirements,
+                                boolean quickOpen, boolean requireHeldKey) {
         if (sessions.containsKey(player.getUniqueId())) {
             core.messages().send(player, "&cYou already have a crate opening in progress.");
             return false;
@@ -49,6 +58,10 @@ public final class OpeningService {
         }
         if (!bypassRequirements && !player.hasPermission("miracrates.use")) {
             core.messages().send(player, "&cYou do not have permission to open crates.");
+            return false;
+        }
+        if (!bypassRequirements && crate.keyIds().isEmpty()) {
+            core.messages().send(player, "&cThis crate has no valid key configured and cannot be opened.");
             return false;
         }
         if (!bypassRequirements) {
@@ -66,13 +79,24 @@ public final class OpeningService {
         }
 
         String keyUsed = null;
-        if (!bypassRequirements && !crate.keyIds().isEmpty()) {
-            Optional<String> consumed = keys.consumeAny(player, crate.keyIds());
+        if (!bypassRequirements) {
+            Optional<String> consumed = requireHeldKey
+                    ? keys.consumeHeld(player, crate.keyIds())
+                    : keys.consumeAny(player, crate.keyIds());
             if (consumed.isEmpty()) {
-                core.messages().send(player, "&cYou do not have a key accepted by this crate.");
+                if (requireHeldKey) {
+                    core.messages().send(player, "&cHold " + keys.primaryKeyDisplayName(crate.keyIds())
+                            + " &cin your main hand and right-click this crate.");
+                } else {
+                    core.messages().send(player, "&cYou do not have a key accepted by this crate.");
+                }
                 return false;
             }
             keyUsed = consumed.get();
+        }
+
+        if (quickOpen) {
+            return complete(player, crate, roll, keyUsed);
         }
 
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.OPENING, crate.id(), 0);
@@ -102,7 +126,7 @@ public final class OpeningService {
 
     private void startAnimation(Session session) {
         int interval = Math.max(1, plugin.getConfig().getInt("opening.roulette-interval-ticks", 4));
-        int duration = Math.max(interval, plugin.getConfig().getInt("opening.animation-ticks", 60));
+        int duration = Math.max(interval, plugin.getConfig().getInt("opening.animation-ticks", 120));
         List<RewardDefinition> visualPool = session.crate.rewards().stream()
                 .filter(reward -> reward.weight() > 0.0D)
                 .filter(reward -> reward.permission() == null || reward.permission().isBlank() || session.player.hasPermission(reward.permission()))
@@ -137,16 +161,21 @@ public final class OpeningService {
         if (sessions.remove(session.player.getUniqueId()) == null) return;
         if (session.task != null) session.task.cancel();
         session.inventory.setItem(13, rewards.displayItem(session.player, session.crate, session.roll.reward()));
-        boolean granted = rewards.grant(session.player, session.roll);
+        complete(session.player, session.crate, session.roll, session.keyUsed);
+    }
+
+    private boolean complete(Player player, CrateDefinition crate, RewardRoll roll, String keyUsed) {
+        boolean granted = rewards.grant(player, roll);
         if (!granted) {
-            if (session.keyUsed != null) keys.give(session.player, session.keyUsed, 1);
-            core.messages().send(session.player, "&cThat reward could not be delivered. Your key was refunded.");
-            plugin.getLogger().warning("Failed to deliver crate reward " + session.roll.reward().id() + " to " + session.player.getName());
-            return;
+            if (keyUsed != null) keys.give(player, keyUsed, 1);
+            core.messages().send(player, "&cThat reward could not be delivered. Your key was refunded.");
+            plugin.getLogger().warning("Failed to deliver crate reward " + roll.reward().id() + " to " + player.getName());
+            return false;
         }
-        playerData.markOpened(session.player.getUniqueId(), session.crate.id());
-        history.record(session.player, session.crate.id(), session.roll, session.keyUsed);
-        core.messages().send(session.player, "&aYou won " + session.roll.reward().displayName() + "&a!");
+        playerData.markOpened(player.getUniqueId(), crate.id());
+        history.record(player, crate.id(), roll, keyUsed);
+        core.messages().send(player, "&aYou won " + roll.reward().displayName() + "&a!");
+        return true;
     }
 
     private static void fillFrame(Inventory inventory) {
