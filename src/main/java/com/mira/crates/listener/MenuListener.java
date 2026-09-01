@@ -67,7 +67,7 @@ public final class MenuListener implements Listener {
             crateEditor.handleClick(player, holder, event);
             return;
         }
-        editor.handleClick(player, holder, rawSlot);
+        editor.handleClick(player, holder, event);
     }
 
     @EventHandler
