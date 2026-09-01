@@ -1,0 +1,44 @@
+name: Release v0.1.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.1.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested source
+        uses: actions/checkout@v4
+        with:
+          ref: 0eeba6d6cfd41a4642ae16051ca16d14a5f8362a
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+
+      - name: Test and build
+        run: gradle clean test build --stacktrace
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.1.0 \
+            build/libs/MiraCrates-0.1.0.jar \
+            --target 0eeba6d6cfd41a4642ae16051ca16d14a5f8362a \
+            --title "MiraCrates v0.1.0" \
+            --notes "MiraCrates v0.1.0 foundation. Configurable crates, physical and virtual keys, rarity-first weighted rewards, item/command/MiraSpawner/key/XP rewards, physical crate locations, calculated-chance previews, roulette openings, persistent cooldowns and opening counts, history logging, editor dashboard, MiraCore integration and a public API."
