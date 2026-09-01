@@ -44,6 +44,7 @@ public final class DefinitionService {
         loadRarities();
         loadKeys();
         loadCrates();
+        ensureEveryCrateHasKey();
     }
 
     public Collection<CrateDefinition> crates() {
@@ -77,7 +78,16 @@ public final class DefinitionService {
     public boolean createCrate(String id, String displayName, Material shulkerMaterial, List<RewardDefinition> rewards) {
         String normalized = Ids.normalize(id);
         if (!Ids.valid(normalized) || crates.containsKey(normalized) || !ShulkerMaterials.isCrateShulker(shulkerMaterial)) return false;
-        crates.put(normalized, new CrateDefinition(normalized, displayName, shulkerMaterial, List.of(), 0L, rewards));
+
+        String companionKeyId = companionKeyId(normalized);
+        if (!keys.containsKey(companionKeyId)) {
+            keys.put(companionKeyId, new KeyDefinition(companionKeyId, companionKeyName(displayName),
+                    Material.TRIPWIRE_HOOK, false, List.of()));
+            saveKeys();
+        }
+
+        crates.put(normalized, new CrateDefinition(normalized, displayName, shulkerMaterial,
+                List.of(companionKeyId), 0L, rewards));
         saveCrates();
         return true;
     }
@@ -86,16 +96,27 @@ public final class DefinitionService {
         String normalized = Ids.normalize(id);
         CrateDefinition existing = crates.get(normalized);
         if (existing == null || displayName == null || displayName.isBlank() || !ShulkerMaterials.isCrateShulker(shulkerMaterial)) return false;
-        crates.put(normalized, new CrateDefinition(existing.id(), displayName, shulkerMaterial, existing.keyIds(),
+
+        List<String> keyIds = existing.keyIds().isEmpty()
+                ? List.of(ensureCompanionKey(existing.id(), displayName))
+                : existing.keyIds();
+        crates.put(normalized, new CrateDefinition(existing.id(), displayName, shulkerMaterial, keyIds,
                 existing.cooldownSeconds(), rewards));
         saveCrates();
         return true;
     }
 
     public boolean deleteCrate(String id) {
-        boolean removed = crates.remove(Ids.normalize(id)) != null;
-        if (removed) saveCrates();
-        return removed;
+        CrateDefinition removed = crates.remove(Ids.normalize(id));
+        if (removed == null) return false;
+
+        String companionKeyId = companionKeyId(removed.id());
+        boolean keyRemoved = removed.keyIds().contains(companionKeyId)
+                && crates.values().stream().noneMatch(crate -> crate.keyIds().contains(companionKeyId))
+                && keys.remove(companionKeyId) != null;
+        saveCrates();
+        if (keyRemoved) saveKeys();
+        return true;
     }
 
     public boolean createKey(String id, String displayName, boolean virtual) {
@@ -118,6 +139,7 @@ public final class DefinitionService {
         }
         saveKeys();
         saveCrates();
+        ensureEveryCrateHasKey();
         return true;
     }
 
@@ -152,6 +174,7 @@ public final class DefinitionService {
         if (crate == null) return false;
         List<String> updated = new ArrayList<>(crate.keyIds());
         if (!updated.remove(Ids.normalize(keyId))) return false;
+        if (updated.isEmpty()) updated.add(ensureCompanionKey(crate.id(), crate.displayName()));
         crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), updated,
                 crate.cooldownSeconds(), crate.rewards()));
         saveCrates();
@@ -258,6 +281,59 @@ public final class DefinitionService {
             }
             crates.put(id, new CrateDefinition(id, name, icon, keyIds, cooldown, rewards));
         }
+    }
+
+    private void ensureEveryCrateHasKey() {
+        boolean keysChanged = false;
+        boolean cratesChanged = false;
+        for (CrateDefinition crate : new ArrayList<>(crates.values())) {
+            List<String> validKeys = crate.keyIds().stream().filter(keys::containsKey).distinct().toList();
+            if (!validKeys.isEmpty()) {
+                if (!validKeys.equals(crate.keyIds())) {
+                    crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), validKeys,
+                            crate.cooldownSeconds(), crate.rewards()));
+                    cratesChanged = true;
+                }
+                continue;
+            }
+
+            String keyId = companionKeyId(crate.id());
+            if (!keys.containsKey(keyId)) {
+                keys.put(keyId, new KeyDefinition(keyId, companionKeyName(crate.displayName()), Material.TRIPWIRE_HOOK,
+                        false, List.of()));
+                keysChanged = true;
+            }
+            crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), List.of(keyId),
+                    crate.cooldownSeconds(), crate.rewards()));
+            cratesChanged = true;
+        }
+        if (keysChanged) saveKeys();
+        if (cratesChanged) saveCrates();
+    }
+
+    private String ensureCompanionKey(String crateId, String displayName) {
+        String keyId = companionKeyId(crateId);
+        if (!keys.containsKey(keyId)) {
+            keys.put(keyId, new KeyDefinition(keyId, companionKeyName(displayName), Material.TRIPWIRE_HOOK,
+                    false, List.of()));
+            saveKeys();
+        }
+        return keyId;
+    }
+
+    private static String companionKeyId(String crateId) {
+        String base = Ids.normalize(crateId);
+        if (base.endsWith("_crate") && base.length() > "_crate".length()) {
+            base = base.substring(0, base.length() - "_crate".length());
+        }
+        return base + "_key";
+    }
+
+    private static String companionKeyName(String crateDisplayName) {
+        String name = crateDisplayName == null ? "" : crateDisplayName.trim();
+        name = name.replaceFirst("(?i)\\s*crate\\s*$", "").trim();
+        if (name.isBlank()) name = "&fCrate";
+        return name + " Key";
     }
 
     private void saveCrates() {
