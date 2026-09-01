@@ -50,7 +50,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         core.modules().register(this, "MiraCrates");
         core.services().register(MiraCratesApi.class, api);
 
-        getServer().getPluginManager().registerEvents(new MenuListener(editor, crateEditor, previews), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(this, editor, crateEditor, previews), this);
         getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, previews, openings,
                 getConfig().getBoolean("interaction.preview-on-left-click", true),
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
