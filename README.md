@@ -2,6 +2,12 @@
 
 MiraCrates is the configurable crate, key and reward engine for the Mira Minecraft plugin ecosystem. It targets **Paper 1.21.11** and **Java 21** and integrates directly with **MiraCore**.
 
+## Download
+
+[**Download MiraCrates v0.1.0**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.1.0/MiraCrates-0.1.0.jar)
+
+Current release: **v0.1.0**
+
 The design follows one important rule: crates, keys, rarities, rewards, physical locations and opening presentation are separate concepts that are linked together instead of hardcoded into individual Java classes.
 
 ## v0.1.0 foundation
