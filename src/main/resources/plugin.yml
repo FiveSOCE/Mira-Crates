@@ -1,16 +1,16 @@
 name: MiraCrates
-version: 0.1.0
+version: 0.2.0
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
-description: Configurable crates, keys and weighted rewards for the Mira plugin ecosystem.
+description: GUI-first shulker crates, keys and weighted rewards for the Mira plugin ecosystem.
 depend: [MiraCore]
 softdepend: [MiraSpawners]
 
 commands:
   miracrates:
     description: MiraCrates editor, administration and diagnostics.
-    usage: /miracrates [help]
+    usage: /miracrates [create|givecrate|help]
     aliases: [mcrates, mcrate]
     permission: miracrates.admin
 

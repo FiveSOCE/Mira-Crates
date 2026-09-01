@@ -5,7 +5,17 @@ import org.bukkit.inventory.InventoryHolder;
 import org.jetbrains.annotations.NotNull;
 
 public final class MiraInventoryHolder implements InventoryHolder {
-    public enum Type { MAIN, CRATES, KEYS, RARITIES, PREVIEW, OPENING }
+    public enum Type {
+        MAIN,
+        CRATES,
+        KEYS,
+        RARITIES,
+        PREVIEW,
+        OPENING,
+        CRATE_EDITOR,
+        CRATE_NAME,
+        CRATE_CHANCE
+    }
 
     private final Type type;
     private final String context;

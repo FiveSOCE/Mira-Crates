@@ -1,2 +1,3 @@
-# Crates are created in game with /mcrates crate create <id> [display name].
+# Crates are normally created and edited in game through /mcrates create and the MiraCrates GUI.
+# Each crate definition is represented by a designated coloured shulker box.
 crates: {}

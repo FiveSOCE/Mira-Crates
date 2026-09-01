@@ -3,6 +3,7 @@ package com.mira.crates.service;
 import com.mira.crates.MiraCratesPlugin;
 import com.mira.crates.model.*;
 import com.mira.crates.util.Ids;
+import com.mira.crates.util.ShulkerMaterials;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -70,9 +71,23 @@ public final class DefinitionService {
     }
 
     public boolean createCrate(String id, String displayName) {
+        return createCrate(id, displayName, Material.PURPLE_SHULKER_BOX, List.of());
+    }
+
+    public boolean createCrate(String id, String displayName, Material shulkerMaterial, List<RewardDefinition> rewards) {
         String normalized = Ids.normalize(id);
-        if (!Ids.valid(normalized) || crates.containsKey(normalized)) return false;
-        crates.put(normalized, new CrateDefinition(normalized, displayName, Material.CHEST, List.of(), 0L, List.of()));
+        if (!Ids.valid(normalized) || crates.containsKey(normalized) || !ShulkerMaterials.isCrateShulker(shulkerMaterial)) return false;
+        crates.put(normalized, new CrateDefinition(normalized, displayName, shulkerMaterial, List.of(), 0L, rewards));
+        saveCrates();
+        return true;
+    }
+
+    public boolean updateCrate(String id, String displayName, Material shulkerMaterial, List<RewardDefinition> rewards) {
+        String normalized = Ids.normalize(id);
+        CrateDefinition existing = crates.get(normalized);
+        if (existing == null || displayName == null || displayName.isBlank() || !ShulkerMaterials.isCrateShulker(shulkerMaterial)) return false;
+        crates.put(normalized, new CrateDefinition(existing.id(), displayName, shulkerMaterial, existing.keyIds(),
+                existing.cooldownSeconds(), rewards));
         saveCrates();
         return true;
     }
@@ -212,7 +227,7 @@ public final class DefinitionService {
             String id = Ids.normalize(rawId);
             String path = "crates." + rawId;
             String name = yaml.getString(path + ".name", id + " Crate");
-            Material icon = material(yaml.getString(path + ".icon"), Material.CHEST);
+            Material icon = ShulkerMaterials.normalise(material(yaml.getString(path + ".icon"), Material.PURPLE_SHULKER_BOX));
             List<String> keyIds = yaml.getStringList(path + ".keys").stream().map(Ids::normalize).toList();
             long cooldown = Math.max(0L, yaml.getLong(path + ".cooldown-seconds", 0L));
             List<RewardDefinition> rewards = new ArrayList<>();
@@ -250,7 +265,7 @@ public final class DefinitionService {
         for (CrateDefinition crate : crates.values()) {
             String path = "crates." + crate.id();
             yaml.set(path + ".name", crate.displayName());
-            yaml.set(path + ".icon", crate.icon().name());
+            yaml.set(path + ".icon", ShulkerMaterials.normalise(crate.icon()).name());
             yaml.set(path + ".keys", crate.keyIds());
             yaml.set(path + ".cooldown-seconds", crate.cooldownSeconds());
             for (RewardDefinition reward : crate.rewards()) {

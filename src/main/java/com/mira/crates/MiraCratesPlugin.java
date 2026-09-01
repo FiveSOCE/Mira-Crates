@@ -6,6 +6,7 @@ import com.mira.core.api.ModuleHealth;
 import com.mira.crates.api.MiraCratesApi;
 import com.mira.crates.api.MiraCratesApiImpl;
 import com.mira.crates.command.MiraCratesCommand;
+import com.mira.crates.gui.CrateEditorService;
 import com.mira.crates.gui.EditorMenuService;
 import com.mira.crates.gui.PreviewService;
 import com.mira.crates.listener.CrateListener;
@@ -24,6 +25,8 @@ public final class MiraCratesPlugin extends JavaPlugin {
     private HistoryService history;
     private OpeningService openings;
     private PreviewService previews;
+    private CrateItemService crateItems;
+    private CrateEditorService crateEditor;
     private EditorMenuService editor;
     private MiraCratesApi api;
 
@@ -39,19 +42,21 @@ public final class MiraCratesPlugin extends JavaPlugin {
         history = new HistoryService(this);
         previews = new PreviewService(core, definitions, rewards);
         openings = new OpeningService(this, core, definitions, keys, rewards, playerData, history);
-        editor = new EditorMenuService(core, definitions, locations, previews);
+        crateItems = new CrateItemService(this, core, definitions);
+        crateEditor = new CrateEditorService(core, definitions, crateItems);
+        editor = new EditorMenuService(core, definitions, locations, previews, crateEditor, crateItems);
         api = new MiraCratesApiImpl(definitions, keys, openings);
 
         core.modules().register(this, "MiraCrates");
         core.services().register(MiraCratesApi.class, api);
 
-        getServer().getPluginManager().registerEvents(new MenuListener(editor, previews), this);
-        getServer().getPluginManager().registerEvents(new CrateListener(core, locations, previews, openings,
+        getServer().getPluginManager().registerEvents(new MenuListener(editor, crateEditor, previews), this);
+        getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, previews, openings,
                 getConfig().getBoolean("interaction.preview-on-left-click", true),
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
 
-        MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, locations, rewards,
-                openings, previews, editor);
+        MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, rewards, openings,
+                previews, editor, crateItems, locations);
         PluginCommand pluginCommand = getCommand("miracrates");
         if (pluginCommand == null) {
             core.modules().setHealth(this, ModuleHealth.UNHEALTHY, "miracrates command missing from plugin.yml");
@@ -61,7 +66,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         pluginCommand.setTabCompleter(command);
 
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
-                "Crates, keys, weighted rewards, previews and opening sessions ready");
+                "GUI crate editor, deployable shulkers, keys, rewards and openings ready");
         getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with "
                 + definitions.crates().size() + " crate definitions.");
     }
