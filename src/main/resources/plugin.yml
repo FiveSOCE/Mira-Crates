@@ -1,9 +1,9 @@
 name: MiraCrates
-version: 0.2.2
+version: 0.3.0
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
-description: GUI-first shulker crates, keys and weighted rewards for the Mira plugin ecosystem.
+description: GUI-first shulker crates, mandatory keys and weighted rewards for the Mira plugin ecosystem.
 depend: [MiraCore]
 softdepend: [MiraSpawners]
 
@@ -19,7 +19,7 @@ permissions:
     description: Access to MiraCrates administration and editor commands.
     default: op
   miracrates.use:
-    description: Allows opening physical crates.
+    description: Allows opening physical crates with a valid key.
     default: true
   miracrates.preview:
     description: Allows previewing physical crate rewards.
