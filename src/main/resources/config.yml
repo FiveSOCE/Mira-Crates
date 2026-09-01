@@ -1,0 +1,14 @@
+opening:
+  animation-ticks: 60
+  roulette-interval-ticks: 4
+
+interaction:
+  preview-on-left-click: true
+  open-on-right-click: true
+  target-distance: 6
+
+history:
+  enabled: true
+
+editor:
+  title: "&5MiraCrates Editor"

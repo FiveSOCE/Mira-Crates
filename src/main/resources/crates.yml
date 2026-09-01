@@ -1,0 +1,2 @@
+# Crates are created in game with /mcrates crate create <id> [display name].
+crates: {}

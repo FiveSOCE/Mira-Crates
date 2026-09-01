@@ -1,0 +1,13 @@
+rarities:
+  common:
+    name: "&fCommon"
+    weight: 70.0
+    icon: WHITE_DYE
+  rare:
+    name: "&bRare"
+    weight: 25.0
+    icon: DIAMOND
+  legendary:
+    name: "&6Legendary"
+    weight: 5.0
+    icon: NETHER_STAR
