@@ -66,7 +66,8 @@ public final class CrateListener implements Listener {
             previews.open(event.getPlayer(), crateId.get(), 0);
         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK && openRight) {
             event.setCancelled(true);
-            openings.attemptOpen(event.getPlayer(), crateId.get(), false);
+            boolean quickOpen = event.getPlayer().isSneaking();
+            openings.attemptPhysicalOpen(event.getPlayer(), crateId.get(), quickOpen);
         }
     }
 
