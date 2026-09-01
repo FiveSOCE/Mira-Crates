@@ -72,6 +72,22 @@ public final class KeyService {
         return true;
     }
 
+    public Optional<String> consumeHeld(Player player, List<String> acceptedKeyIds) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        String heldId = identify(held).orElse(null);
+        if (heldId == null) return Optional.empty();
+
+        boolean accepted = acceptedKeyIds.stream().map(Ids::normalize).anyMatch(heldId::equals);
+        if (!accepted) return Optional.empty();
+
+        KeyDefinition key = definitions.key(heldId).orElse(null);
+        if (key == null || key.virtual()) return Optional.empty();
+
+        if (held.getAmount() <= 1) player.getInventory().setItemInMainHand(null);
+        else held.setAmount(held.getAmount() - 1);
+        return Optional.of(heldId);
+    }
+
     public Optional<String> consumeAny(Player player, List<String> acceptedKeyIds) {
         for (String rawId : acceptedKeyIds) {
             KeyDefinition key = definitions.key(rawId).orElse(null);
@@ -84,6 +100,14 @@ public final class KeyService {
             if (consumePhysical(player, key.id())) return Optional.of(key.id());
         }
         return Optional.empty();
+    }
+
+    public String primaryKeyDisplayName(List<String> acceptedKeyIds) {
+        for (String rawId : acceptedKeyIds) {
+            KeyDefinition key = definitions.key(rawId).orElse(null);
+            if (key != null) return key.displayName();
+        }
+        return "&fcrate key";
     }
 
     private boolean consumePhysical(Player player, String keyId) {
