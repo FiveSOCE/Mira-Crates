@@ -2,55 +2,27 @@
 
 MiraCrates is the GUI-first crate, key and reward engine for the Mira Minecraft plugin ecosystem. It targets **Paper 1.21.11** and **Java 21** and integrates directly with **MiraCore**.
 
-## Download
+## Current development version
 
-[**Download MiraCrates v0.2.2**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.2.2/MiraCrates-0.2.2.jar)
+**v0.3.0**
 
-Current release: **v0.2.2**
+## v0.3.0 key and opening workflow
 
-## v0.2.2 naming hotfix
+Keys are now mandatory for normal crate openings.
 
-v0.2.2 removes the anvil naming workflow completely.
+Every crate automatically receives a matching physical key when the crate definition is created. A crate is never intentionally left without a valid key.
 
-When an administrator clicks **Crate Name**:
-
-1. The crate editor closes.
-2. MiraCrates privately asks the administrator to type the crate name in chat.
-3. The administrator's next chat message is captured by MiraCrates and cancelled so it is not broadcast to other players.
-4. The text is applied as the crate display name.
-5. The crate editor reopens automatically with the new name already set.
-
-The v0.2.1 inventory interaction fix remains in place, so normal left/right clicks in the administrator's own inventory are allowed while the crate editor is open. This allows reward items to be picked up onto the cursor while unsafe transfer paths such as shift-click and hotbar swapping remain blocked.
-
-## v0.2 crate workflow
-
-Every MiraCrates crate is represented by a designated coloured shulker box.
-
-Normal administration is intentionally GUI-first:
+Examples:
 
 ```text
-/mcrates
+Test Crate -> Test Key
+Vote Crate -> Vote Key
+Legendary Crate -> Legendary Key
 ```
 
-opens the MiraCrates dashboard.
+The companion key uses a tripwire hook with hidden MiraCrates key identity data.
 
-```text
-/mcrates create
-```
-
-opens the crate creator directly.
-
-The creator GUI lets an administrator configure:
-
-- crate display name
-- shulker colour
-- item rewards
-- exact percentage chance for each item
-- automatic chance balancing
-
-Reward chances must total exactly **100%** before the crate can be saved. The Auto Balance button divides 100% evenly across the current item rewards, after which individual rewards can be adjusted with the chance editor.
-
-When a new crate is saved, MiraCrates automatically gives the administrator its deployable shulker item.
+Existing crates from older MiraCrates versions that have no valid attached key are migrated on load. MiraCrates automatically creates and attaches a companion key for them.
 
 ## Creating a crate
 
@@ -60,65 +32,125 @@ Run:
 /mcrates create
 ```
 
-In the GUI:
+or open `/mcrates` and click **Create New Crate**.
 
-1. Click **Crate Name**. The GUI closes and MiraCrates privately asks you to type the crate name in chat. Your next message is captured and not broadcast, then the crate editor reopens with the name applied.
-2. Left/right-click **Shulker Colour** to cycle through the sixteen coloured shulker boxes.
-3. Use normal left/right clicks in your own inventory to put the reward item on your cursor, then click **Add Reward Item**. The item is copied, not consumed.
-4. Click a reward item to edit its chance. Right-click a reward to remove it.
-5. Use **Auto Balance Chances** whenever useful.
-6. Once the displayed total is exactly 100%, click **Save Crate**.
+The creator GUI lets an administrator configure:
 
-The crate ID is generated from the original crate name. For example:
+- crate display name
+- shulker colour
+- item rewards
+- exact percentage chance for each item
+- automatic chance balancing
 
-```text
-Vote Crate -> vote_crate
-Legendary Crate -> legendary_crate
-```
+### Crate name
+
+Click **Crate Name**. The editor closes and asks you to type the name in chat.
+
+That next chat message is captured as editor input and cancelled so it is not broadcast to other players. The crate editor then reopens automatically with the name applied.
+
+### Reward items
+
+Use normal left/right clicks in your own inventory to place the desired item on your cursor, then click **Add Reward Item**.
+
+The reward item is copied rather than consumed.
+
+Reward chances must total exactly **100%** before Save is available. Auto Balance divides 100% evenly between the current rewards.
+
+When a new crate is saved:
+
+1. MiraCrates creates the crate definition.
+2. MiraCrates automatically creates its matching physical key.
+3. The key is automatically attached to that crate.
+4. The administrator receives the deployable crate shulker.
 
 ## Physical crate shulkers
 
-Give yourself any existing crate with:
+Every crate is represented by its configured coloured shulker box.
+
+Give yourself an existing crate with:
 
 ```text
 /mcrates givecrate <crate name>
 ```
 
-Examples:
-
-```text
-/mcrates givecrate vote_crate
-/mcrates givecrate Vote Crate
-```
-
-The item is a special MiraCrates shulker carrying hidden crate identity data.
-
-Place the shulker anywhere and it becomes a working crate immediately. No location command is needed.
+Place the special shulker anywhere and it becomes a working crate immediately.
 
 By default:
 
-- **Left-click** a placed crate to preview rewards.
-- **Right-click** a placed crate to open it.
+- **Left-click** the crate to preview rewards.
+- **Right-click while holding the correct key** to open it normally.
+- **Crouch + right-click while holding the correct key** to quick-open it.
+- Empty hand or the wrong key cannot open the crate.
 - Normal players cannot break placed crate shulkers.
-- Administrators can break one to pick the special crate shulker back up.
-- Placed crate shulkers are protected from explosions and piston movement.
-- The placed block stores its crate identity as tile PDC as well as normal MiraCrates location persistence.
+- Administrators can break one and receive the deployable crate shulker back.
+- Placed crates are protected from explosions and piston movement.
+
+## Opening modes
+
+### Normal opening
+
+Normal opening consumes one valid key, locks the reward before animation begins, then runs the roulette GUI.
+
+The default roulette duration is now **120 ticks / 6 seconds**, increased from the previous 60 ticks / 3 seconds.
+
+Existing v0.2 configuration files using the old default 60-tick duration are automatically migrated to 120 ticks on first v0.3 startup.
+
+### Quick opening
+
+Hold the correct key, crouch and right-click the crate.
+
+MiraCrates consumes one key, rolls the reward through the same reward engine and grants it immediately without opening the roulette GUI.
+
+Quick opening does not bypass:
+
+- key requirements
+- crate permissions
+- cooldowns
+- reward eligibility
+- reward logging
+
+It only skips the visual animation.
+
+## Key management GUI
+
+Open:
+
+```text
+/mcrates
+```
+
+and select **Keys**.
+
+Each crate's automatically generated companion key appears in this menu.
+
+On a key entry:
+
+- **Left-click** gives yourself 1 key.
+- **Right-click** gives yourself 10 keys.
+
+This is intended to keep normal crate administration GUI-first. Legacy/admin key commands remain available for recovery and advanced use.
 
 ## Managing crates through `/mcrates`
 
-The Crates browser is an editor rather than a read-only list.
-
 On a crate entry:
 
-- **Left-click** to edit the crate through the GUI.
-- **Shift-left-click** to preview its rewards.
-- **Right-click** to give yourself its deployable shulker.
+- **Left-click** edits the crate.
+- **Shift-left-click** previews its rewards.
+- **Right-click** gives yourself its deployable crate shulker.
 
-Editing a crate uses the same name, colour, reward and chance interface as creation.
+The crate list also displays how many keys are attached to each crate.
+
+## Opening safety
+
+The reward is selected and locked before a normal roulette animation begins.
+
+Closing the opening GUI does not cancel a pending reward. If a player disconnects during an animated opening, MiraCrates completes the pending payout during the quit flow.
+
+If reward delivery fails after a key has been consumed, MiraCrates refunds that key.
 
 ## Reward engine
 
-GUI-created item rewards use direct percentages. Their configured chances are stored as weights in the single active item reward pool, so a crate configured as:
+GUI-created item rewards use direct percentages. For example:
 
 ```text
 Diamond x8    50%
@@ -126,9 +158,9 @@ Spawner x1    30%
 Sword x1      20%
 ```
 
-has a 50/30/20 item reward split.
+produces a 50/30/20 reward split.
 
-The underlying reward engine remains available for advanced integrations, including:
+The underlying engine also supports:
 
 - item rewards
 - console-command rewards
@@ -138,17 +170,11 @@ The underlying reward engine remains available for advanced integrations, includ
 - permission-aware rewards
 - physical and virtual keys
 - crate cooldowns
-- reward history
-
-Advanced command routes are retained for functionality that has not yet been moved into a dedicated GUI, but they are no longer the intended normal crate-creation workflow.
-
-## Opening safety
-
-The reward is selected and locked before the roulette animation begins.
-
-Closing the inventory does not cancel a pending reward. If a player disconnects during an opening, MiraCrates finishes the payout during the quit flow. If a reward provider fails after a key was consumed, the key is refunded where applicable and the failure is logged.
+- opening history
 
 ## Main commands
+
+Normal administration is intentionally GUI-first.
 
 ```text
 /mcrates
@@ -160,28 +186,21 @@ Closing the inventory does not cancel a pending reward. If a player disconnects 
 /mcrates reload
 ```
 
-Admin testing commands remain available:
-
-```text
-/mcrates preview <crate>
-/mcrates open <crate>
-```
-
-`/mcrates open` bypasses normal requirements and is intended for testing.
+Advanced/admin routes remain available for recovery and integrations.
 
 ## Requirements
 
 - Paper 1.21.11
 - Java 21
 - MiraCore 0.1.0 or newer
-- MiraSpawners 0.1.3 or newer is optional and enables the native MiraSpawners reward provider
+- MiraSpawners 0.1.3 or newer is optional and enables native MiraSpawners reward support
 
 ## Permissions
 
 | Permission | Default | Purpose |
 | --- | --- | --- |
 | `miracrates.admin` | OP | Editor, crate placement recovery and administration |
-| `miracrates.use` | Everyone | Open placed crates |
+| `miracrates.use` | Everyone | Open placed crates with a valid key |
 | `miracrates.preview` | Everyone | Preview placed crate rewards |
 
 ## Data files
@@ -197,12 +216,6 @@ plugins/MiraCrates/
 └── opening-history.log
 ```
 
-## Architecture
-
-Crate definitions, keys, rewards, opening logic and physical placements remain separate internally. The shulker item is a deployable representation of a crate definition, not a hardcoded crate class.
-
-This keeps future GUI work such as key editors, command-reward editors, milestones and opening-style editors from requiring a redesign of the crate engine.
-
 ## Building from source
 
 ```bash
@@ -214,7 +227,7 @@ The build pins and SHA-256 verifies the released MiraCore 0.1.0 and MiraSpawners
 Output:
 
 ```text
-build/libs/MiraCrates-0.2.2.jar
+build/libs/MiraCrates-0.3.0.jar
 ```
 
 GitHub Actions compiles and tests MiraCrates with Java 21 against Paper 1.21.11.
