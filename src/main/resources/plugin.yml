@@ -1,5 +1,5 @@
 name: MiraCrates
-version: 0.2.0
+version: 0.2.1
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
