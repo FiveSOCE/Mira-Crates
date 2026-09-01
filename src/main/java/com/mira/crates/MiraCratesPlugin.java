@@ -33,6 +33,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        migrateConfiguration();
         core = MiraCoreProvider.require();
         definitions = new DefinitionService(this);
         playerData = new PlayerDataService(this);
@@ -66,7 +67,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         pluginCommand.setTabCompleter(command);
 
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
-                "GUI crate editor, deployable shulkers, keys, rewards and openings ready");
+                "GUI crate editor, mandatory keys, deployable shulkers and openings ready");
         getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with "
                 + definitions.crates().size() + " crate definitions.");
     }
@@ -83,6 +84,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
 
     public void reloadPluginConfiguration() {
         reloadConfig();
+        migrateConfiguration();
         definitions.reload();
         locations.reload();
         playerData.reload();
@@ -99,5 +101,16 @@ public final class MiraCratesPlugin extends JavaPlugin {
         } catch (ClassNotFoundException ex) {
             return false;
         }
+    }
+
+    private void migrateConfiguration() {
+        int version = getConfig().getInt("config-version", 1);
+        if (version >= 2) return;
+
+        if (getConfig().getInt("opening.animation-ticks", 60) == 60) {
+            getConfig().set("opening.animation-ticks", 120);
+        }
+        getConfig().set("config-version", 2);
+        saveConfig();
     }
 }
