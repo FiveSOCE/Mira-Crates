@@ -7,6 +7,7 @@ import com.mira.crates.model.RarityDefinition;
 import com.mira.crates.service.CrateItemService;
 import com.mira.crates.service.CrateLocationService;
 import com.mira.crates.service.DefinitionService;
+import com.mira.crates.service.KeyService;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -24,15 +25,18 @@ public final class EditorMenuService {
     private final PreviewService previews;
     private final CrateEditorService crateEditor;
     private final CrateItemService crateItems;
+    private final KeyService keys;
 
     public EditorMenuService(MiraCore core, DefinitionService definitions, CrateLocationService locations,
-                             PreviewService previews, CrateEditorService crateEditor, CrateItemService crateItems) {
+                             PreviewService previews, CrateEditorService crateEditor, CrateItemService crateItems,
+                             KeyService keys) {
         this.core = core;
         this.definitions = definitions;
         this.locations = locations;
         this.previews = previews;
         this.crateEditor = crateEditor;
         this.crateItems = crateItems;
+        this.keys = keys;
     }
 
     public void openMain(Player player) {
@@ -46,7 +50,8 @@ public final class EditorMenuService {
                 core.messages().parse("&7Name, colour, reward items and chances"),
                 core.messages().parse("&7are configured through GUIs."))));
         inventory.setItem(14, GuiItems.item(Material.TRIPWIRE_HOOK, core.messages().parse("&dKeys"), List.of(
-                core.messages().parse("&7Definitions: &f" + definitions.keys().size()))));
+                core.messages().parse("&7Definitions: &f" + definitions.keys().size()),
+                core.messages().parse("&7Click to browse and receive keys"))));
         inventory.setItem(16, GuiItems.item(Material.NETHER_STAR, core.messages().parse("&dRarities"), List.of(
                 core.messages().parse("&7Definitions: &f" + definitions.rarities().size()))));
         inventory.setItem(22, GuiItems.item(Material.BOOK, core.messages().parse("&fGUI-First Workflow"), List.of(
@@ -69,8 +74,7 @@ public final class EditorMenuService {
                 else if (rawSlot == 16) openRarities(player, 0);
             }
             case CRATES -> handleCrateList(player, holder, event);
-            case KEYS -> handlePagedNavigation(player, holder, rawSlot,
-                    () -> openKeys(player, holder.page() - 1), () -> openKeys(player, holder.page() + 1));
+            case KEYS -> handleKeyList(player, holder, event);
             case RARITIES -> handlePagedNavigation(player, holder, rawSlot,
                     () -> openRarities(player, holder.page() - 1), () -> openRarities(player, holder.page() + 1));
             default -> { }
@@ -89,6 +93,7 @@ public final class EditorMenuService {
             inventory.setItem(slot, GuiItems.item(crate.icon(), core.messages().parse(crate.displayName()), List.of(
                     core.messages().parse("&7ID: &f" + crate.id()),
                     core.messages().parse("&7Rewards: &f" + crate.rewards().size()),
+                    core.messages().parse("&7Keys: &f" + crate.keyIds().size()),
                     core.messages().parse("&7Placed: &f" + locations.countForCrate(crate.id())),
                     core.messages().parse("&aLeft-click: edit"),
                     core.messages().parse("&dShift-left: preview rewards"),
@@ -109,7 +114,9 @@ public final class EditorMenuService {
             KeyDefinition key = values.get(start + slot);
             inventory.setItem(slot, GuiItems.item(key.material(), core.messages().parse(key.displayName()), List.of(
                     core.messages().parse("&7ID: &f" + key.id()),
-                    core.messages().parse("&7Type: &f" + (key.virtual() ? "Virtual" : "Physical")))));
+                    core.messages().parse("&7Type: &f" + (key.virtual() ? "Virtual" : "Physical")),
+                    core.messages().parse("&aLeft-click: give yourself 1"),
+                    core.messages().parse("&eRight-click: give yourself 10"))));
         }
         nav(inventory);
         player.openInventory(inventory);
@@ -149,6 +156,26 @@ public final class EditorMenuService {
             previews.open(player, crate.id(), 0);
         } else {
             crateEditor.openEdit(player, crate.id());
+        }
+    }
+
+    private void handleKeyList(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
+        int rawSlot = event.getRawSlot();
+        if (rawSlot == 48) { openKeys(player, holder.page() - 1); return; }
+        if (rawSlot == 49) { openMain(player); return; }
+        if (rawSlot == 50) { openKeys(player, holder.page() + 1); return; }
+        if (rawSlot < 0 || rawSlot >= PAGE_SIZE) return;
+
+        List<KeyDefinition> values = definitions.keys().stream().sorted(Comparator.comparing(KeyDefinition::id)).toList();
+        int index = holder.page() * PAGE_SIZE + rawSlot;
+        if (index >= values.size()) return;
+
+        KeyDefinition key = values.get(index);
+        int amount = event.getClick().isRightClick() ? 10 : 1;
+        if (keys.give(player, key.id(), amount)) {
+            core.messages().send(player, "&aGave you &f" + amount + "x " + key.displayName() + "&a.");
+        } else {
+            core.messages().send(player, "&cCould not give that key.");
         }
     }
 
