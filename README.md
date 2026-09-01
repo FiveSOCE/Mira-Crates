@@ -4,16 +4,23 @@ MiraCrates is the GUI-first crate, key and reward engine for the Mira Minecraft 
 
 ## Download
 
-[**Download MiraCrates v0.2.1**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.2.1/MiraCrates-0.2.1.jar)
+[**Download MiraCrates v0.2.2**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.2.2/MiraCrates-0.2.2.jar)
 
-Current release: **v0.2.1**
+Current release: **v0.2.2**
 
-## v0.2.1 interaction hotfix
+## v0.2.2 naming hotfix
 
-v0.2.1 fixes the two primary crate-creator interaction issues from v0.2.0:
+v0.2.2 removes the anvil naming workflow completely.
 
-- the crate-name anvil now produces a clickable confirmation result while the administrator types, and clicking that result commits the name and returns to the crate editor
-- normal left/right clicks in the administrator's own inventory are now allowed while the crate editor is open, so reward items can be picked up onto the cursor; unsafe transfer paths such as shift-click and hotbar swapping remain blocked
+When an administrator clicks **Crate Name**:
+
+1. The crate editor closes.
+2. MiraCrates privately asks the administrator to type the crate name in chat.
+3. The administrator's next chat message is captured by MiraCrates and cancelled so it is not broadcast to other players.
+4. The text is applied as the crate display name.
+5. The crate editor reopens automatically with the new name already set.
+
+The v0.2.1 inventory interaction fix remains in place, so normal left/right clicks in the administrator's own inventory are allowed while the crate editor is open. This allows reward items to be picked up onto the cursor while unsafe transfer paths such as shift-click and hotbar swapping remain blocked.
 
 ## v0.2 crate workflow
 
@@ -55,7 +62,7 @@ Run:
 
 In the GUI:
 
-1. Click **Crate Name**, type the name in the anvil interface, then click the result name tag to confirm it.
+1. Click **Crate Name**. The GUI closes and MiraCrates privately asks you to type the crate name in chat. Your next message is captured and not broadcast, then the crate editor reopens with the name applied.
 2. Left/right-click **Shulker Colour** to cycle through the sixteen coloured shulker boxes.
 3. Use normal left/right clicks in your own inventory to put the reward item on your cursor, then click **Add Reward Item**. The item is copied, not consumed.
 4. Click a reward item to edit its chance. Right-click a reward to remove it.
@@ -207,7 +214,7 @@ The build pins and SHA-256 verifies the released MiraCore 0.1.0 and MiraSpawners
 Output:
 
 ```text
-build/libs/MiraCrates-0.2.1.jar
+build/libs/MiraCrates-0.2.2.jar
 ```
 
 GitHub Actions compiles and tests MiraCrates with Java 21 against Paper 1.21.11.
