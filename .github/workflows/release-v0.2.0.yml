@@ -1,0 +1,44 @@
+name: Release v0.2.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.2.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested source
+        uses: actions/checkout@v4
+        with:
+          ref: f3f830fd21aa43c69b5e445b39a5c1018f7e4806
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+
+      - name: Test and build
+        run: gradle clean test build --stacktrace
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.2.0 \
+            build/libs/MiraCrates-0.2.0.jar \
+            --target f3f830fd21aa43c69b5e445b39a5c1018f7e4806 \
+            --title "MiraCrates v0.2.0" \
+            --notes "GUI-first crate overhaul. Every crate is a designated coloured shulker. /mcrates create opens a GUI for crate name, shulker colour, reward items and exact percentage chances. /mcrates givecrate <crate> gives the executing admin a deployable crate shulker. Placing it anywhere instantly activates the crate. Admins can pick placed crates back up. The main /mcrates browser now edits, previews and gives crate shulkers directly, with command-heavy configuration moved to advanced/backward-compatible paths."
