@@ -33,5 +33,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MiraCrates
-          path: build/libs/MiraCrates-0.2.0.jar
+          path: build/libs/MiraCrates-0.2.1.jar
           if-no-files-found: error
