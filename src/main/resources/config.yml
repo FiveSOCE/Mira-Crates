@@ -1,5 +1,7 @@
+config-version: 2
+
 opening:
-  animation-ticks: 60
+  animation-ticks: 120
   roulette-interval-ticks: 4
 
 interaction:
