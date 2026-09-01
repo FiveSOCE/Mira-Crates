@@ -1,30 +1,29 @@
 package com.mira.crates.listener;
 
+import com.mira.crates.MiraCratesPlugin;
 import com.mira.crates.gui.CrateEditorService;
 import com.mira.crates.gui.EditorMenuService;
 import com.mira.crates.gui.MiraInventoryHolder;
 import com.mira.crates.gui.PreviewService;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Material;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.List;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 public final class MenuListener implements Listener {
+    private final MiraCratesPlugin plugin;
     private final EditorMenuService editor;
     private final CrateEditorService crateEditor;
     private final PreviewService previews;
 
-    public MenuListener(EditorMenuService editor, CrateEditorService crateEditor, PreviewService previews) {
+    public MenuListener(MiraCratesPlugin plugin, EditorMenuService editor, CrateEditorService crateEditor, PreviewService previews) {
+        this.plugin = plugin;
         this.editor = editor;
         this.crateEditor = crateEditor;
         this.previews = previews;
@@ -62,7 +61,6 @@ public final class MenuListener implements Listener {
             return;
         }
         if (holder.type() == MiraInventoryHolder.Type.CRATE_EDITOR
-                || holder.type() == MiraInventoryHolder.Type.CRATE_NAME
                 || holder.type() == MiraInventoryHolder.Type.CRATE_CHANCE) {
             crateEditor.handleClick(player, holder, event);
             return;
@@ -70,30 +68,26 @@ public final class MenuListener implements Listener {
         editor.handleClick(player, holder, event);
     }
 
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        if (!crateEditor.isAwaitingName(player.getUniqueId())) return;
+
+        // This message is editor input, not chat. Cancel it before normal chat
+        // processing and remove all recipients so it is not broadcast to anyone.
+        event.setCancelled(true);
+        event.getRecipients().clear();
+        String crateName = event.getMessage();
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) return;
+            crateEditor.submitChatName(player, crateName);
+        });
+    }
+
     @EventHandler
-    public void onPrepareAnvil(PrepareAnvilEvent event) {
-        if (!(event.getView().getTopInventory().getHolder() instanceof MiraInventoryHolder holder)) return;
-        if (holder.type() != MiraInventoryHolder.Type.CRATE_NAME) return;
-
-        String rename = event.getInventory().getRenameText();
-        if (rename == null || rename.isBlank()) {
-            event.setResult(null);
-            return;
-        }
-
-        String trimmed = rename.trim();
-        if (trimmed.length() > 48) trimmed = trimmed.substring(0, 48);
-
-        ItemStack result = new ItemStack(Material.NAME_TAG);
-        ItemMeta meta = result.getItemMeta();
-        meta.displayName(Component.text(trimmed).decoration(TextDecoration.ITALIC, false));
-        meta.lore(List.of(
-                Component.text("Click to confirm crate name").decoration(TextDecoration.ITALIC, false)
-        ));
-        result.setItemMeta(meta);
-
-        event.getInventory().setRepairCost(0);
-        event.setResult(result);
+    public void onQuit(PlayerQuitEvent event) {
+        crateEditor.cancelNameInput(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
