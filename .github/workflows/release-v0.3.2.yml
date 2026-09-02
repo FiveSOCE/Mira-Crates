@@ -1,0 +1,42 @@
+name: Release v0.3.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.3.2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+
+      - name: Build
+        run: gradle clean test build --stacktrace
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.3.2 \
+            build/libs/MiraCrates-0.3.2.jar \
+            --target "$GITHUB_SHA" \
+            --title "MiraCrates v0.3.2" \
+            --notes "Adds crate-name holograms above deployed MiraCrates shulkers. Holograms are recreated from saved crate locations on reload/restart, removed when crates are picked up, and use each crate's configured display name. Adds Holograms as a soft dependency and configurable hologram height."
