@@ -1,24 +1,79 @@
 # MiraCrates
 
-MiraCrates is the GUI-first crate, key and reward engine for the Mira Minecraft plugin ecosystem. It targets **Paper 1.21.11** and **Java 21** and integrates directly with **MiraCore**.
+MiraCrates is the crate, key and reward engine for the Mira Minecraft plugin ecosystem. It targets **Paper 1.21.11** and **Java 21** and integrates directly with **MiraCore**.
 
 ## Download
 
-[**Download MiraCrates v0.3.2 (.jar)**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.2/MiraCrates-0.3.2.jar)
+[**Download MiraCrates v0.3.3 (.jar)**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.3/MiraCrates-0.3.3.jar)
 
 [View all releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
-Current release: **v0.3.2**
+Current release: **v0.3.3**
 
-## v0.3.2 crate holograms
+## v0.3.3 editor and admin hardening
 
-When the **Holograms** plugin is installed and enabled, every deployed MiraCrates shulker receives a floating label above it showing that crate's configured display name.
+The `/mcrates` admin GUI is now intentionally minimal and ordered:
 
-- The hologram appears automatically when a crate is placed.
-- Existing deployed crates are rebuilt from `locations.yml` after restart or `/mcrates reload`.
-- The hologram is removed when an administrator picks up/removes the crate.
-- The label uses the crate display name from `crates.yml`, including legacy `&` colour formatting.
-- Hologram height is configurable in `config.yml`.
+1. **Create**
+2. **Manage**
+3. **Keys**
+
+The old GUI book/help tile and rarity/nether-star tile have been removed. Rarity data remains an internal reward-engine concern and is no longer exposed in the main GUI.
+
+### Reward chance editing
+
+Editing an existing crate no longer rewrites the existing reward percentages when a reward is added or removed.
+
+- New rewards start at **0.00%**.
+- Existing reward chances stay exactly where they were.
+- Removing a reward does not rebalance the remaining rewards.
+- Save remains locked until the item reward chances total exactly **100.00%**.
+- Auto Balance only changes values when the admin explicitly clicks it.
+- Chance controls are now **-10%, -1%, -0.01%, +0.01%, +1%, +10%**.
+
+Saving a crate no longer gives the administrator a new crate item. Use **Manage** or `/mcrates givecrate <crate>` when a deployable copy is actually wanted.
+
+### Change a deployed crate
+
+An administrator can look directly at an existing deployed MiraCrates shulker and run:
+
+```text
+/mcrate change <crate name>
+```
+
+`/mcrates change` and `/miracrates change` are also accepted.
+
+The targeted physical crate is converted to the requested existing crate definition. This updates:
+
+- crate identity
+- shulker colour/material
+- accepted key/rewards through the new crate definition
+- saved placed-crate location data
+- floating hologram name
+
+The command requires `miracrates.admin`.
+
+## Player permissions
+
+Normal players do **not** have access to the MiraCrates admin menu, crate editor, key management tools, create/remove/change commands, or other administration commands.
+
+Their normal interaction surface is:
+
+- **Left-click a placed crate** to preview its rewards.
+- **Right-click a placed crate while holding the correct key** to open/redeem it.
+- **Crouch + right-click with the correct key** performs the existing quick-open path.
+
+Placed crates remain protected from normal-player breaking, explosions and piston movement.
+
+## Crate holograms
+
+When the **Holograms** plugin is installed and enabled, every deployed MiraCrates shulker receives a floating label showing that crate's configured display name.
+
+- Created automatically when a crate is placed.
+- Rebuilt from `locations.yml` after restart or `/mcrates reload`.
+- Removed with the crate.
+- Updated by `/mcrate change`.
+- Supports legacy `&` colour formatting.
 
 Default configuration:
 
@@ -28,88 +83,13 @@ holograms:
   height: 1.65
 ```
 
-Holograms is a soft dependency, so MiraCrates continues to function if it is missing; only the floating labels are disabled.
-
-## Physical crate shulkers
-
-Give yourself an existing crate with:
-
-```text
-/mcrates givecrate <crate name>
-```
-
-Place the special shulker anywhere and it becomes a working crate immediately.
-
-By default:
-
-- **Left-click** the crate to preview rewards.
-- **Right-click while holding the correct key** to open it normally.
-- **Crouch + right-click while holding the correct key** to quick-open it.
-- Empty hand or the wrong key cannot open the crate.
-- Normal players cannot break placed crate shulkers.
-- Administrators can break one and receive the deployable crate shulker back.
-- Placed crates are protected from explosions and piston movement.
-
-Administrators can remove one deployed crate instance with:
-
-```text
-/mcrates remove
-```
-
-Look directly at the placed MiraCrates shulker and run the command. The physical shulker is removed and its saved location is unregistered. The crate definition, companion key, rewards, and any other placed copies remain untouched.
-
-## Creating a crate
-
-Run:
-
-```text
-/mcrates create
-```
-
-or open `/mcrates` and click **Create New Crate**.
-
-The creator GUI lets an administrator configure:
-
-- crate display name
-- shulker colour
-- item rewards
-- exact percentage chance for each item
-- automatic chance balancing
-
-Every crate automatically receives a matching physical key when the crate definition is created. Existing older crates without a valid key are migrated on load.
-
-## Opening modes
-
-### Normal opening
-
-Normal opening consumes one valid key, locks the reward before animation begins, then runs the roulette GUI.
-
-### Quick opening
-
-Hold the correct key, crouch and right-click the crate. MiraCrates consumes one key, rolls the reward through the same reward engine and grants it immediately without opening the roulette GUI.
-
-Quick opening does not bypass key requirements, crate permissions, cooldowns, reward eligibility or reward logging.
-
-## Reward engine
-
-The engine supports:
-
-- item rewards
-- console-command rewards
-- MiraSpawners rewards through its registered API
-- MiraCrates key rewards
-- XP-level rewards
-- permission-aware rewards
-- physical and virtual keys
-- crate cooldowns
-- opening history
-
-## Main commands
+## Main admin commands
 
 ```text
 /mcrates
 /mcrates create
 /mcrates givecrate <crate name>
+/mcrate change <crate name>
 /mcrates remove
 /mcrates help
 /mcrates info
@@ -122,18 +102,16 @@ The engine supports:
 - Paper 1.21.11
 - Java 21
 - MiraCore 0.1.0 or newer
-- Holograms 1.0.1 is optional and enables crate-name holograms
+- Holograms is optional and enables crate-name holograms
 - MiraSpawners 0.1.3 or newer is optional and enables native MiraSpawners reward support
-
-Holograms resource: https://www.spigotmc.org/resources/holograms-1-21-1-21-11.130705/
 
 ## Permissions
 
 | Permission | Default | Purpose |
 | --- | --- | --- |
-| `miracrates.admin` | OP | Editor, crate placement recovery and administration |
+| `miracrates.admin` | OP | All admin GUI, editing, crate/key tools and physical crate change/remove operations |
 | `miracrates.use` | Everyone | Open placed crates with a valid key |
-| `miracrates.preview` | Everyone | Preview placed crate rewards |
+| `miracrates.preview` | Everyone | Preview placed crate rewards by left-clicking |
 
 ## Data files
 
@@ -157,7 +135,7 @@ gradle clean test build
 Output:
 
 ```text
-build/libs/MiraCrates-0.3.2.jar
+build/libs/MiraCrates-0.3.3.jar
 ```
 
 GitHub Actions compiles and tests MiraCrates with Java 21 against Paper 1.21.11.
