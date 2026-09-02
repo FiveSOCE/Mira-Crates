@@ -3,7 +3,6 @@ package com.mira.crates.gui;
 import com.mira.core.api.MiraCore;
 import com.mira.crates.model.CrateDefinition;
 import com.mira.crates.model.KeyDefinition;
-import com.mira.crates.model.RarityDefinition;
 import com.mira.crates.service.CrateItemService;
 import com.mira.crates.service.CrateLocationService;
 import com.mira.crates.service.DefinitionService;
@@ -40,43 +39,48 @@ public final class EditorMenuService {
     }
 
     public void openMain(Player player) {
+        if (!player.hasPermission("miracrates.admin")) {
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.MAIN, "", 0);
         Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse("&5MiraCrates Editor"));
         holder.bind(inventory);
-        inventory.setItem(10, GuiItems.item(Material.PURPLE_SHULKER_BOX, core.messages().parse("&dManage Crates"), List.of(
+        inventory.setItem(11, GuiItems.item(Material.LIME_SHULKER_BOX, core.messages().parse("&aCreate"), List.of(
+                core.messages().parse("&7Create a new crate."),
+                core.messages().parse("&7Configure its name, colour, rewards and chances."))));
+        inventory.setItem(13, GuiItems.item(Material.PURPLE_SHULKER_BOX, core.messages().parse("&dManage"), List.of(
                 core.messages().parse("&7Crates: &f" + definitions.crates().size()),
-                core.messages().parse("&7Click to edit, preview or receive crates"))));
-        inventory.setItem(12, GuiItems.item(Material.LIME_SHULKER_BOX, core.messages().parse("&aCreate New Crate"), List.of(
-                core.messages().parse("&7Name, colour, reward items and chances"),
-                core.messages().parse("&7are configured through GUIs."))));
-        inventory.setItem(14, GuiItems.item(Material.TRIPWIRE_HOOK, core.messages().parse("&dKeys"), List.of(
+                core.messages().parse("&7Edit, preview or receive existing crates."))));
+        inventory.setItem(15, GuiItems.item(Material.TRIPWIRE_HOOK, core.messages().parse("&eKeys"), List.of(
                 core.messages().parse("&7Definitions: &f" + definitions.keys().size()),
-                core.messages().parse("&7Click to browse and receive keys"))));
-        inventory.setItem(16, GuiItems.item(Material.NETHER_STAR, core.messages().parse("&dRarities"), List.of(
-                core.messages().parse("&7Definitions: &f" + definitions.rarities().size()))));
-        inventory.setItem(22, GuiItems.item(Material.BOOK, core.messages().parse("&fGUI-First Workflow"), List.of(
-                core.messages().parse("&7Use &f/mcrates create &7or the green shulker."),
-                core.messages().parse("&7Commands are kept mainly for diagnostics/admin recovery."))));
+                core.messages().parse("&7Browse and receive keys."))));
         player.openInventory(inventory);
     }
 
     public void openCreate(Player player) {
+        if (!player.hasPermission("miracrates.admin")) {
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
         crateEditor.startCreate(player);
     }
 
     public void handleClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
+        if (!player.hasPermission("miracrates.admin")) {
+            player.closeInventory();
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
         int rawSlot = event.getRawSlot();
         switch (holder.type()) {
             case MAIN -> {
-                if (rawSlot == 10) openCrates(player, 0);
-                else if (rawSlot == 12) crateEditor.startCreate(player);
-                else if (rawSlot == 14) openKeys(player, 0);
-                else if (rawSlot == 16) openRarities(player, 0);
+                if (rawSlot == 11) crateEditor.startCreate(player);
+                else if (rawSlot == 13) openCrates(player, 0);
+                else if (rawSlot == 15) openKeys(player, 0);
             }
             case CRATES -> handleCrateList(player, holder, event);
             case KEYS -> handleKeyList(player, holder, event);
-            case RARITIES -> handlePagedNavigation(player, holder, rawSlot,
-                    () -> openRarities(player, holder.page() - 1), () -> openRarities(player, holder.page() + 1));
             default -> { }
         }
     }
@@ -85,7 +89,7 @@ public final class EditorMenuService {
         List<CrateDefinition> values = definitions.crates().stream().sorted(Comparator.comparing(CrateDefinition::id)).toList();
         int page = clampPage(requestedPage, values.size());
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATES, "", page);
-        Inventory inventory = Bukkit.createInventory(holder, 54, core.messages().parse("&5MiraCrates &8- Crates"));
+        Inventory inventory = Bukkit.createInventory(holder, 54, core.messages().parse("&5MiraCrates &8- Manage"));
         holder.bind(inventory);
         int start = page * PAGE_SIZE;
         for (int slot = 0; slot < PAGE_SIZE && start + slot < values.size(); slot++) {
@@ -117,23 +121,6 @@ public final class EditorMenuService {
                     core.messages().parse("&7Type: &f" + (key.virtual() ? "Virtual" : "Physical")),
                     core.messages().parse("&aLeft-click: give yourself 1"),
                     core.messages().parse("&eRight-click: give yourself 10"))));
-        }
-        nav(inventory);
-        player.openInventory(inventory);
-    }
-
-    private void openRarities(Player player, int requestedPage) {
-        List<RarityDefinition> values = definitions.rarities().stream().sorted(Comparator.comparing(RarityDefinition::id)).toList();
-        int page = clampPage(requestedPage, values.size());
-        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.RARITIES, "", page);
-        Inventory inventory = Bukkit.createInventory(holder, 54, core.messages().parse("&5MiraCrates &8- Rarities"));
-        holder.bind(inventory);
-        int start = page * PAGE_SIZE;
-        for (int slot = 0; slot < PAGE_SIZE && start + slot < values.size(); slot++) {
-            RarityDefinition rarity = values.get(start + slot);
-            inventory.setItem(slot, GuiItems.item(rarity.icon(), core.messages().parse(rarity.displayName()), List.of(
-                    core.messages().parse("&7ID: &f" + rarity.id()),
-                    core.messages().parse("&7Weight: &f" + rarity.weight()))));
         }
         nav(inventory);
         player.openInventory(inventory);
@@ -177,12 +164,6 @@ public final class EditorMenuService {
         } else {
             core.messages().send(player, "&cCould not give that key.");
         }
-    }
-
-    private void handlePagedNavigation(Player player, MiraInventoryHolder holder, int rawSlot, Runnable previous, Runnable next) {
-        if (rawSlot == 48) previous.run();
-        else if (rawSlot == 49) openMain(player);
-        else if (rawSlot == 50) next.run();
     }
 
     private void nav(Inventory inventory) {
