@@ -34,14 +34,20 @@ public final class MenuListener implements Listener {
         if (!(event.getView().getTopInventory().getHolder() instanceof MiraInventoryHolder holder)) return;
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
+        boolean playerFacing = holder.type() == MiraInventoryHolder.Type.PREVIEW || holder.type() == MiraInventoryHolder.Type.OPENING;
+        if (!playerFacing && !player.hasPermission("miracrates.admin")) {
+            event.setCancelled(true);
+            player.closeInventory();
+            plugin.core().messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
+
         int topSize = event.getView().getTopInventory().getSize();
         int rawSlot = event.getRawSlot();
 
-        // The crate editor intentionally lets admins use normal left/right clicks in
-        // their own inventory so they can put a reward item on the cursor. All
-        // transfer-style clicks remain blocked so editor items cannot be moved.
         if (rawSlot >= topSize) {
             if (holder.type() == MiraInventoryHolder.Type.CRATE_EDITOR
+                    && player.hasPermission("miracrates.admin")
                     && (event.getClick() == ClickType.LEFT || event.getClick() == ClickType.RIGHT)) {
                 return;
             }
@@ -73,8 +79,6 @@ public final class MenuListener implements Listener {
         Player player = event.getPlayer();
         if (!crateEditor.isAwaitingName(player.getUniqueId())) return;
 
-        // This message is editor input, not chat. Cancel it before normal chat
-        // processing and remove all recipients so it is not broadcast to anyone.
         event.setCancelled(true);
         event.getRecipients().clear();
         String crateName = event.getMessage();
@@ -93,6 +97,14 @@ public final class MenuListener implements Listener {
     @EventHandler
     public void onDrag(InventoryDragEvent event) {
         if (!(event.getView().getTopInventory().getHolder() instanceof MiraInventoryHolder holder)) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        boolean playerFacing = holder.type() == MiraInventoryHolder.Type.PREVIEW || holder.type() == MiraInventoryHolder.Type.OPENING;
+        if (!playerFacing && !player.hasPermission("miracrates.admin")) {
+            event.setCancelled(true);
+            player.closeInventory();
+            return;
+        }
 
         if (holder.type() == MiraInventoryHolder.Type.CRATE_EDITOR) {
             int topSize = event.getView().getTopInventory().getSize();
