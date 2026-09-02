@@ -1,4 +1,4 @@
-config-version: 2
+config-version: 3
 
 opening:
   animation-ticks: 120
@@ -8,6 +8,10 @@ interaction:
   preview-on-left-click: true
   open-on-right-click: true
   target-distance: 6
+
+holograms:
+  enabled: true
+  height: 1.65
 
 history:
   enabled: true
