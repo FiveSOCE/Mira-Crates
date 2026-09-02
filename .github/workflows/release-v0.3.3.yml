@@ -1,0 +1,42 @@
+name: Release v0.3.3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.3.3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+
+      - name: Build
+        run: gradle clean test build --stacktrace
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.3.3 \
+            build/libs/MiraCrates-0.3.3.jar \
+            --target "$GITHUB_SHA" \
+            --title "MiraCrates v0.3.3" \
+            --notes "Simplifies the admin GUI to Create, Manage and Keys; preserves existing reward chances when items are added/removed; adds +/-0.01 percent chance controls; stops GUI saves from handing out crate items; adds /mcrate change <crate> for converting a targeted deployed crate including shulker colour and hologram; and hardens admin GUI/tool permissions so normal players are limited to previewing and opening crates with keys."
