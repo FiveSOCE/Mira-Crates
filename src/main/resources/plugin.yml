@@ -1,5 +1,5 @@
 name: MiraCrates
-version: 0.3.2
+version: 0.3.3
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
@@ -9,18 +9,18 @@ softdepend: [MiraSpawners, Holograms]
 
 commands:
   miracrates:
-    description: MiraCrates editor, administration and diagnostics.
-    usage: /miracrates [create|givecrate|remove|help]
+    description: MiraCrates administration and diagnostics.
+    usage: /miracrates [create|givecrate|remove|change|help]
     aliases: [mcrates, mcrate]
     permission: miracrates.admin
 
 permissions:
   miracrates.admin:
-    description: Access to MiraCrates administration and editor commands.
+    description: Access to MiraCrates administration, editor, crate conversion and key tools.
     default: op
   miracrates.use:
     description: Allows opening physical crates with a valid key.
     default: true
   miracrates.preview:
-    description: Allows previewing physical crate rewards.
+    description: Allows previewing physical crate rewards by left-clicking them.
     default: true
