@@ -1,11 +1,11 @@
 name: MiraCrates
-version: 0.3.1
+version: 0.3.2
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
-description: GUI-first shulker crates, mandatory keys and weighted rewards for the Mira plugin ecosystem.
+description: GUI-first shulker crates, mandatory keys, weighted rewards and crate holograms for the Mira plugin ecosystem.
 depend: [MiraCore]
-softdepend: [MiraSpawners]
+softdepend: [MiraSpawners, Holograms]
 
 commands:
   miracrates:
