@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class CrateEditorService {
     private static final int REWARD_FIRST_SLOT = 27;
     private static final int REWARD_SLOTS = 18;
-    private static final double CHANCE_TOLERANCE = 0.011D;
+    private static final double CHANCE_TOLERANCE = 0.001D;
 
     private final MiraCore core;
     private final DefinitionService definitions;
@@ -39,6 +39,10 @@ public final class CrateEditorService {
     }
 
     public void startCreate(Player player) {
+        if (!player.hasPermission("miracrates.admin")) {
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
         awaitingNameInput.remove(player.getUniqueId());
         sessions.put(player.getUniqueId(), new Draft(null, "&fNew Crate", Material.PURPLE_SHULKER_BOX,
                 new ArrayList<>(), new ArrayList<>()));
@@ -46,6 +50,10 @@ public final class CrateEditorService {
     }
 
     public boolean openEdit(Player player, String crateId) {
+        if (!player.hasPermission("miracrates.admin")) {
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return false;
+        }
         Optional<CrateDefinition> found = definitions.crate(crateId);
         if (found.isEmpty()) return false;
         CrateDefinition crate = found.get();
@@ -53,7 +61,7 @@ public final class CrateEditorService {
         List<RewardDefinition> preserved = new ArrayList<>();
         for (RewardDefinition reward : crate.rewards()) {
             if (reward.type() == RewardType.ITEM && reward.item() != null) {
-                ItemStack item = reward.item();
+                ItemStack item = reward.item().clone();
                 item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), reward.amount())));
                 itemRewards.add(new DraftReward(item, reward.weight(), reward.id()));
             } else {
@@ -74,6 +82,11 @@ public final class CrateEditorService {
     public void submitChatName(Player player, String message) {
         UUID playerId = player.getUniqueId();
         if (!awaitingNameInput.remove(playerId)) return;
+        if (!player.hasPermission("miracrates.admin")) {
+            sessions.remove(playerId);
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
 
         Draft draft = sessions.get(playerId);
         if (draft == null) {
@@ -99,6 +112,12 @@ public final class CrateEditorService {
     }
 
     public void handleClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
+        if (!player.hasPermission("miracrates.admin")) {
+            sessions.remove(player.getUniqueId());
+            player.closeInventory();
+            core.messages().send(player, "&cYou do not have permission to administer MiraCrates.");
+            return;
+        }
         Draft draft = sessions.get(player.getUniqueId());
         if (draft == null) {
             player.closeInventory();
@@ -139,7 +158,6 @@ public final class CrateEditorService {
             }
             ItemStack captured = cursor.clone();
             draft.rewards.add(new DraftReward(captured, 0.0D, nextRewardId(draft)));
-            autoBalance(draft);
             openEditor(player);
             return;
         }
@@ -157,7 +175,6 @@ public final class CrateEditorService {
             if (index >= draft.rewards.size()) return;
             if (event.getClick().isRightClick()) {
                 draft.rewards.remove(index);
-                if (!draft.rewards.isEmpty()) autoBalance(draft);
                 openEditor(player);
             } else {
                 openChanceEditor(player, index);
@@ -190,14 +207,16 @@ public final class CrateEditorService {
         }
         DraftReward reward = draft.rewards.get(index);
         double delta = switch (event.getRawSlot()) {
-            case 10 -> -10.0D;
-            case 11 -> -1.0D;
-            case 15 -> 1.0D;
-            case 16 -> 10.0D;
+            case 9 -> -10.0D;
+            case 10 -> -1.0D;
+            case 11 -> -0.01D;
+            case 15 -> 0.01D;
+            case 16 -> 1.0D;
+            case 17 -> 10.0D;
             default -> 0.0D;
         };
         if (delta != 0.0D) {
-            reward.chance = Math.max(0.0D, Math.min(100.0D, reward.chance + delta));
+            reward.chance = roundChance(Math.max(0.0D, Math.min(100.0D, reward.chance + delta)));
             openChanceEditor(player, index);
             return;
         }
@@ -217,8 +236,8 @@ public final class CrateEditorService {
                 List.of(), 0L, List.of()));
         ItemMeta previewMeta = preview.getItemMeta();
         previewMeta.lore(List.of(
-                line("&7This is the physical crate item."),
-                line("&7Place it anywhere and it works instantly.")
+                line("&7This is the physical crate appearance."),
+                line("&7Use Manage to receive a deployable copy when needed.")
         ));
         preview.setItemMeta(previewMeta);
         inventory.setItem(4, preview);
@@ -234,9 +253,11 @@ public final class CrateEditorService {
         inventory.setItem(14, GuiItems.item(Material.LIME_DYE, core.messages().parse("&aAdd Reward Item"), List.of(
                 line("&7Put an item on your cursor"),
                 line("&7then click this button."),
+                line("&7Existing reward chances are not changed."),
                 line("&7The item is copied, not consumed."))));
         inventory.setItem(16, GuiItems.item(Material.COMPARATOR, core.messages().parse("&fAuto Balance Chances"), List.of(
-                line("&7Splits 100% evenly between all rewards."))));
+                line("&7Splits 100% evenly between all item rewards."),
+                line("&7Only use this when you want to overwrite current chances."))));
 
         for (int index = 0; index < draft.rewards.size() && index < REWARD_SLOTS; index++) {
             inventory.setItem(REWARD_FIRST_SLOT + index, rewardDisplay(draft.rewards.get(index)));
@@ -247,9 +268,9 @@ public final class CrateEditorService {
         inventory.setItem(48, GuiItems.item(valid ? Material.EMERALD_BLOCK : Material.REDSTONE_BLOCK,
                 core.messages().parse(valid ? "&aSave Crate" : "&cCannot Save Yet"), List.of(
                         line(String.format(Locale.ROOT, "&7Total chance: &f%.2f%%", total)),
-                        line(valid ? "&7Click to save." : "&7Reward chances must total exactly 100%."))));
+                        line(valid ? "&7Click to save." : "&7Reward chances must total exactly 100.00%."))));
         inventory.setItem(49, GuiItems.item(Material.PAPER, core.messages().parse("&fReward Chances"), List.of(
-                line(String.format(Locale.ROOT, "&7Total: &f%.2f%% / 100%%", total)),
+                line(String.format(Locale.ROOT, "&7Total: &f%.2f%% / 100.00%%", total)),
                 line("&7Left-click a reward to edit its chance."),
                 line("&7Right-click a reward to remove it."))));
         inventory.setItem(50, GuiItems.item(Material.BARRIER, core.messages().parse("&cCancel"), List.of(
@@ -264,8 +285,9 @@ public final class CrateEditorService {
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_CHANCE, Integer.toString(index), 0);
         Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse("&5Reward Chance"));
         holder.bind(inventory);
-        inventory.setItem(10, GuiItems.item(Material.RED_DYE, core.messages().parse("&c-10%"), List.of()));
-        inventory.setItem(11, GuiItems.item(Material.REDSTONE, core.messages().parse("&c-1%"), List.of()));
+        inventory.setItem(9, GuiItems.item(Material.RED_DYE, core.messages().parse("&c-10%"), List.of()));
+        inventory.setItem(10, GuiItems.item(Material.REDSTONE, core.messages().parse("&c-1%"), List.of()));
+        inventory.setItem(11, GuiItems.item(Material.REDSTONE_TORCH, core.messages().parse("&c-0.01%"), List.of()));
         ItemStack display = rewardDisplay(reward);
         ItemMeta meta = display.getItemMeta();
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
@@ -273,8 +295,9 @@ public final class CrateEditorService {
         meta.lore(lore);
         display.setItemMeta(meta);
         inventory.setItem(13, display);
-        inventory.setItem(15, GuiItems.item(Material.GLOWSTONE_DUST, core.messages().parse("&a+1%"), List.of()));
-        inventory.setItem(16, GuiItems.item(Material.LIME_DYE, core.messages().parse("&a+10%"), List.of()));
+        inventory.setItem(15, GuiItems.item(Material.GLOWSTONE_DUST, core.messages().parse("&a+0.01%"), List.of()));
+        inventory.setItem(16, GuiItems.item(Material.SUGAR, core.messages().parse("&a+1%"), List.of()));
+        inventory.setItem(17, GuiItems.item(Material.LIME_DYE, core.messages().parse("&a+10%"), List.of()));
         inventory.setItem(22, GuiItems.item(Material.ARROW, core.messages().parse("&fBack"), List.of()));
         player.openInventory(inventory);
     }
@@ -287,7 +310,7 @@ public final class CrateEditorService {
         double total = chanceTotal(draft);
         if (Math.abs(total - 100.0D) > CHANCE_TOLERANCE) {
             core.messages().send(player, String.format(Locale.ROOT,
-                    "&cReward chances must total 100%%. Current total: %.2f%%", total));
+                    "&cReward chances must total 100.00%%. Current total: %.2f%%", total));
             return;
         }
         if (definitions.rarity("common").isEmpty()) definitions.createRarity("common", 100.0D, "&fCommon");
@@ -298,7 +321,7 @@ public final class CrateEditorService {
             int amount = Math.max(1, stored.getAmount());
             stored.setAmount(1);
             String display = "&f" + pretty(stored.getType()) + (amount > 1 ? " x" + amount : "");
-            rewards.add(new RewardDefinition(draftReward.id, RewardType.ITEM, "common", draftReward.chance,
+            rewards.add(new RewardDefinition(draftReward.id, RewardType.ITEM, "common", roundChance(draftReward.chance),
                     display, stored.getType(), amount, "", false, stored, ""));
         }
 
@@ -326,8 +349,7 @@ public final class CrateEditorService {
         awaitingNameInput.remove(player.getUniqueId());
         sessions.remove(player.getUniqueId());
         player.closeInventory();
-        crateItems.give(player, crateId);
-        core.messages().send(player, "&aSaved crate &f" + crateId + "&a and gave you its deployable shulker.");
+        core.messages().send(player, "&aSaved crate &f" + crateId + "&a.");
     }
 
     private ItemStack rewardDisplay(DraftReward reward) {
@@ -350,14 +372,18 @@ public final class CrateEditorService {
         double base = Math.floor((100.0D / size) * 100.0D) / 100.0D;
         double used = 0.0D;
         for (int i = 0; i < size; i++) {
-            double chance = i == size - 1 ? 100.0D - used : base;
+            double chance = i == size - 1 ? roundChance(100.0D - used) : base;
             draft.rewards.get(i).chance = chance;
-            used += chance;
+            used = roundChance(used + chance);
         }
     }
 
     private static double chanceTotal(Draft draft) {
-        return draft.rewards.stream().mapToDouble(reward -> reward.chance).sum();
+        return roundChance(draft.rewards.stream().mapToDouble(reward -> reward.chance).sum());
+    }
+
+    private static double roundChance(double value) {
+        return Math.round(value * 100.0D) / 100.0D;
     }
 
     private static String nextRewardId(Draft draft) {
@@ -419,7 +445,7 @@ public final class CrateEditorService {
 
         private DraftReward(ItemStack item, double chance, String id) {
             this.item = item.clone();
-            this.chance = chance;
+            this.chance = roundChance(chance);
             this.id = id;
         }
     }
