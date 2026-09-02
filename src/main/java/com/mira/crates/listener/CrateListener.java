@@ -3,6 +3,7 @@ package com.mira.crates.listener;
 import com.mira.core.api.MiraCore;
 import com.mira.crates.gui.PreviewService;
 import com.mira.crates.model.CrateLocation;
+import com.mira.crates.service.CrateHologramService;
 import com.mira.crates.service.CrateItemService;
 import com.mira.crates.service.CrateLocationService;
 import com.mira.crates.service.OpeningService;
@@ -27,16 +28,19 @@ public final class CrateListener implements Listener {
     private final MiraCore core;
     private final CrateLocationService locations;
     private final CrateItemService crateItems;
+    private final CrateHologramService holograms;
     private final PreviewService previews;
     private final OpeningService openings;
     private final boolean previewLeft;
     private final boolean openRight;
 
     public CrateListener(MiraCore core, CrateLocationService locations, CrateItemService crateItems,
-                         PreviewService previews, OpeningService openings, boolean previewLeft, boolean openRight) {
+                         CrateHologramService holograms, PreviewService previews, OpeningService openings,
+                         boolean previewLeft, boolean openRight) {
         this.core = core;
         this.locations = locations;
         this.crateItems = crateItems;
+        this.holograms = holograms;
         this.previews = previews;
         this.openings = openings;
         this.previewLeft = previewLeft;
@@ -49,6 +53,7 @@ public final class CrateListener implements Listener {
         if (crateId.isEmpty()) return;
         locations.set(event.getBlockPlaced(), crateId.get());
         crateItems.markPlaced(event.getBlockPlaced(), crateId.get());
+        holograms.create(event.getBlockPlaced(), crateId.get());
         core.messages().send(event.getPlayer(), "&aDeployed crate &f" + crateId.get() + "&a.");
     }
 
@@ -83,6 +88,7 @@ public final class CrateListener implements Listener {
         event.setDropItems(false);
         event.setExpToDrop(0);
         if (event.getBlock().getState() instanceof ShulkerBox shulkerBox) shulkerBox.getInventory().clear();
+        holograms.remove(event.getBlock());
         locations.remove(event.getBlock());
         crateItems.give(event.getPlayer(), crateId.get());
         core.messages().send(event.getPlayer(), "&aPicked up crate &f" + crateId.get() + "&a.");
@@ -117,7 +123,10 @@ public final class CrateListener implements Listener {
         Optional<CrateLocation> linked = locations.at(block);
         if (linked.isPresent()) return Optional.of(linked.get().crateId());
         Optional<String> embedded = crateItems.crateId(block);
-        embedded.ifPresent(crateId -> locations.set(block, crateId));
+        embedded.ifPresent(crateId -> {
+            locations.set(block, crateId);
+            holograms.create(block, crateId);
+        });
         return embedded;
     }
 }
