@@ -20,6 +20,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
     private DefinitionService definitions;
     private PlayerDataService playerData;
     private CrateLocationService locations;
+    private CrateHologramService holograms;
     private KeyService keys;
     private RewardEngine rewards;
     private HistoryService history;
@@ -38,6 +39,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         definitions = new DefinitionService(this);
         playerData = new PlayerDataService(this);
         locations = new CrateLocationService(this);
+        holograms = new CrateHologramService(this, definitions, locations);
         keys = new KeyService(this, core, definitions, playerData);
         rewards = new RewardEngine(this, core, definitions, keys);
         history = new HistoryService(this);
@@ -52,7 +54,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         core.services().register(MiraCratesApi.class, api);
 
         getServer().getPluginManager().registerEvents(new MenuListener(this, editor, crateEditor, previews), this);
-        getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, previews, openings,
+        getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, holograms, previews, openings,
                 getConfig().getBoolean("interaction.preview-on-left-click", true),
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
 
@@ -66,14 +68,17 @@ public final class MiraCratesPlugin extends JavaPlugin {
         pluginCommand.setExecutor(command);
         pluginCommand.setTabCompleter(command);
 
+        getServer().getScheduler().runTask(this, holograms::syncAll);
+
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
-                "GUI crate editor, mandatory keys, deployable shulkers and openings ready");
+                "GUI crate editor, mandatory keys, deployable shulkers, holograms and openings ready");
         getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with "
                 + definitions.crates().size() + " crate definitions.");
     }
 
     @Override
     public void onDisable() {
+        if (holograms != null) holograms.shutdown();
         if (openings != null) openings.shutdown();
         if (playerData != null) playerData.save();
         if (core != null) {
@@ -88,6 +93,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         definitions.reload();
         locations.reload();
         playerData.reload();
+        if (holograms != null) getServer().getScheduler().runTask(this, holograms::syncAll);
     }
 
     public MiraCore core() {
@@ -105,12 +111,18 @@ public final class MiraCratesPlugin extends JavaPlugin {
 
     private void migrateConfiguration() {
         int version = getConfig().getInt("config-version", 1);
-        if (version >= 2) return;
-
-        if (getConfig().getInt("opening.animation-ticks", 60) == 60) {
-            getConfig().set("opening.animation-ticks", 120);
+        if (version < 2) {
+            if (getConfig().getInt("opening.animation-ticks", 60) == 60) {
+                getConfig().set("opening.animation-ticks", 120);
+            }
         }
-        getConfig().set("config-version", 2);
-        saveConfig();
+        if (version < 3) {
+            if (!getConfig().contains("holograms.enabled")) getConfig().set("holograms.enabled", true);
+            if (!getConfig().contains("holograms.height")) getConfig().set("holograms.height", 1.65D);
+        }
+        if (version < 3) {
+            getConfig().set("config-version", 3);
+            saveConfig();
+        }
     }
 }
