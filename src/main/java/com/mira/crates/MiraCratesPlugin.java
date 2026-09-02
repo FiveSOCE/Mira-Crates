@@ -9,6 +9,7 @@ import com.mira.crates.command.MiraCratesCommand;
 import com.mira.crates.gui.CrateEditorService;
 import com.mira.crates.gui.EditorMenuService;
 import com.mira.crates.gui.PreviewService;
+import com.mira.crates.listener.AdminCrateChangeListener;
 import com.mira.crates.listener.CrateListener;
 import com.mira.crates.listener.MenuListener;
 import com.mira.crates.service.*;
@@ -57,6 +58,8 @@ public final class MiraCratesPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, holograms, previews, openings,
                 getConfig().getBoolean("interaction.preview-on-left-click", true),
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
+        getServer().getPluginManager().registerEvents(
+                new AdminCrateChangeListener(this, core, definitions, locations, crateItems, holograms), this);
 
         MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, rewards, openings,
                 previews, editor, crateItems, locations);
