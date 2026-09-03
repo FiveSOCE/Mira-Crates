@@ -24,10 +24,13 @@ public final class OpeningService {
     private final RewardEngine rewards;
     private final PlayerDataService playerData;
     private final HistoryService history;
+    private final JackpotService jackpots;
+    private final SeasonalCrateService seasons;
     private final Map<UUID, Session> sessions = new HashMap<>();
 
     public OpeningService(MiraCratesPlugin plugin, MiraCore core, DefinitionService definitions, KeyService keys,
-                          RewardEngine rewards, PlayerDataService playerData, HistoryService history) {
+                          RewardEngine rewards, PlayerDataService playerData, HistoryService history,
+                          JackpotService jackpots, SeasonalCrateService seasons) {
         this.plugin = plugin;
         this.core = core;
         this.definitions = definitions;
@@ -35,6 +38,8 @@ public final class OpeningService {
         this.rewards = rewards;
         this.playerData = playerData;
         this.history = history;
+        this.jackpots = jackpots;
+        this.seasons = seasons;
     }
 
     public boolean attemptOpen(Player player, String crateId, boolean bypassRequirements) {
@@ -54,6 +59,10 @@ public final class OpeningService {
         CrateDefinition crate = definitions.crate(crateId).orElse(null);
         if (crate == null) {
             core.messages().send(player, "&cUnknown crate: " + crateId);
+            return false;
+        }
+        if (!bypassRequirements && !seasons.active(crate.id())) {
+            core.messages().send(player, "&cThis seasonal crate is not currently active. &7(" + seasons.window(crate.id()) + ")");
             return false;
         }
         if (!bypassRequirements && !player.hasPermission("miracrates.use")) {
@@ -80,24 +89,16 @@ public final class OpeningService {
 
         String keyUsed = null;
         if (!bypassRequirements) {
-            Optional<String> consumed = requireHeldKey
-                    ? keys.consumeHeld(player, crate.keyIds())
-                    : keys.consumeAny(player, crate.keyIds());
+            Optional<String> consumed = requireHeldKey ? keys.consumeHeld(player, crate.keyIds()) : keys.consumeAny(player, crate.keyIds());
             if (consumed.isEmpty()) {
-                if (requireHeldKey) {
-                    core.messages().send(player, "&cHold " + keys.primaryKeyDisplayName(crate.keyIds())
-                            + " &cin your main hand and right-click this crate.");
-                } else {
-                    core.messages().send(player, "&cYou do not have a key accepted by this crate.");
-                }
+                if (requireHeldKey) core.messages().send(player, "&cHold " + keys.primaryKeyDisplayName(crate.keyIds()) + " &cin your main hand and right-click this crate.");
+                else core.messages().send(player, "&cYou do not have a key accepted by this crate.");
                 return false;
             }
             keyUsed = consumed.get();
         }
 
-        if (quickOpen) {
-            return complete(player, crate, roll, keyUsed);
-        }
+        if (quickOpen) return complete(player, crate, roll, keyUsed);
 
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.OPENING, crate.id(), 0);
         Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse(crate.displayName() + " &8Opening"));
@@ -111,18 +112,9 @@ public final class OpeningService {
         return true;
     }
 
-    public boolean isOpening(UUID playerId) {
-        return sessions.containsKey(playerId);
-    }
-
-    public void finishNow(Player player) {
-        Session session = sessions.get(player.getUniqueId());
-        if (session != null) finish(session);
-    }
-
-    public void shutdown() {
-        for (Session session : new ArrayList<>(sessions.values())) finish(session);
-    }
+    public boolean isOpening(UUID playerId) { return sessions.containsKey(playerId); }
+    public void finishNow(Player player) { Session session = sessions.get(player.getUniqueId()); if (session != null) finish(session); }
+    public void shutdown() { for (Session session : new ArrayList<>(sessions.values())) finish(session); }
 
     private void startAnimation(Session session) {
         int interval = Math.max(1, plugin.getConfig().getInt("opening.roulette-interval-ticks", 4));
@@ -134,22 +126,15 @@ public final class OpeningService {
 
         BukkitRunnable task = new BukkitRunnable() {
             private int elapsed;
-
-            @Override
-            public void run() {
-                if (!sessions.containsKey(session.player.getUniqueId())) {
-                    cancel();
-                    return;
-                }
+            @Override public void run() {
+                if (!sessions.containsKey(session.player.getUniqueId())) { cancel(); return; }
                 elapsed += interval;
                 if (!visualPool.isEmpty()) {
                     RewardDefinition visual = visualPool.get(ThreadLocalRandom.current().nextInt(visualPool.size()));
                     session.inventory.setItem(13, rewards.displayItem(session.player, session.crate, visual));
                 }
                 if (elapsed >= duration) {
-                    cancel();
-                    session.task = null;
-                    finish(session);
+                    cancel(); session.task = null; finish(session);
                 }
             }
         };
@@ -175,14 +160,29 @@ public final class OpeningService {
         playerData.markOpened(player.getUniqueId(), crate.id());
         history.record(player, crate.id(), roll, keyUsed);
         core.messages().send(player, "&aYou won " + roll.reward().displayName() + "&a!");
+
+        if (isRare(roll.reward())) {
+            jackpots.record(player, crate, roll.reward());
+            String message = plugin.getConfig().getString("rare-win.message", "&6[Jackpot] &f%player% &7won %reward% &7from %crate%&7!")
+                    .replace("%player%", player.getName())
+                    .replace("%reward%", roll.reward().displayName())
+                    .replace("%crate%", crate.displayName());
+            Bukkit.broadcast(core.messages().parse(message));
+            core.milestones().award(player.getUniqueId(), "miracrates.jackpot", "MiraCrates",
+                    Map.of("crate", crate.id(), "reward", roll.reward().id(), "rarity", roll.reward().rarityId()));
+        }
         return true;
+    }
+
+    private boolean isRare(RewardDefinition reward) {
+        if (reward.broadcast()) return true;
+        return plugin.getConfig().getStringList("rare-win.rarities").stream()
+                .anyMatch(rarity -> rarity.equalsIgnoreCase(reward.rarityId()));
     }
 
     private static void fillFrame(Inventory inventory) {
         ItemStack glass = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            if (slot != 13) inventory.setItem(slot, glass);
-        }
+        for (int slot = 0; slot < inventory.getSize(); slot++) if (slot != 13) inventory.setItem(slot, glass);
     }
 
     private static final class Session {
@@ -192,13 +192,8 @@ public final class OpeningService {
         private final String keyUsed;
         private final Inventory inventory;
         private BukkitRunnable task;
-
         private Session(Player player, CrateDefinition crate, RewardRoll roll, String keyUsed, Inventory inventory) {
-            this.player = player;
-            this.crate = crate;
-            this.roll = roll;
-            this.keyUsed = keyUsed;
-            this.inventory = inventory;
+            this.player = player; this.crate = crate; this.roll = roll; this.keyUsed = keyUsed; this.inventory = inventory;
         }
     }
 }
