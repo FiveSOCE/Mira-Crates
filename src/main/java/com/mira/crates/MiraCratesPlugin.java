@@ -30,6 +30,8 @@ public final class MiraCratesPlugin extends JavaPlugin {
     private CrateItemService crateItems;
     private CrateEditorService crateEditor;
     private EditorMenuService editor;
+    private JackpotService jackpots;
+    private SeasonalCrateService seasons;
     private MiraCratesApi api;
 
     @Override
@@ -44,8 +46,10 @@ public final class MiraCratesPlugin extends JavaPlugin {
         keys = new KeyService(this, core, definitions, playerData);
         rewards = new RewardEngine(this, core, definitions, keys);
         history = new HistoryService(this);
+        jackpots = new JackpotService(this);
+        seasons = new SeasonalCrateService(this);
         previews = new PreviewService(core, definitions, rewards);
-        openings = new OpeningService(this, core, definitions, keys, rewards, playerData, history);
+        openings = new OpeningService(this, core, definitions, keys, rewards, playerData, history, jackpots, seasons);
         crateItems = new CrateItemService(this, core, definitions);
         crateEditor = new CrateEditorService(core, definitions, crateItems);
         editor = new EditorMenuService(core, definitions, locations, previews, crateEditor, crateItems, keys);
@@ -58,11 +62,9 @@ public final class MiraCratesPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, holograms, previews, openings,
                 getConfig().getBoolean("interaction.preview-on-left-click", true),
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
-        getServer().getPluginManager().registerEvents(
-                new AdminCrateChangeListener(this, core, definitions, locations, crateItems, holograms), this);
+        getServer().getPluginManager().registerEvents(new AdminCrateChangeListener(this, core, definitions, locations, crateItems, holograms), this);
 
-        MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, rewards, openings,
-                previews, editor, crateItems, locations);
+        MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, rewards, openings, previews, editor, crateItems, locations);
         PluginCommand pluginCommand = getCommand("miracrates");
         if (pluginCommand == null) {
             core.modules().setHealth(this, ModuleHealth.UNHEALTHY, "miracrates command missing from plugin.yml");
@@ -71,12 +73,12 @@ public final class MiraCratesPlugin extends JavaPlugin {
         pluginCommand.setExecutor(command);
         pluginCommand.setTabCompleter(command);
 
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) new CratesPlaceholderExpansion(this, jackpots).register();
         getServer().getScheduler().runTask(this, holograms::syncAll);
 
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
-                "GUI crate editor, mandatory keys, deployable shulkers, holograms and openings ready");
-        getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with "
-                + definitions.crates().size() + " crate definitions.");
+                "Crates, rare-win broadcasts, jackpot data and seasonal windows ready");
+        getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with " + definitions.crates().size() + " crate definitions.");
     }
 
     @Override
@@ -99,32 +101,26 @@ public final class MiraCratesPlugin extends JavaPlugin {
         if (holograms != null) getServer().getScheduler().runTask(this, holograms::syncAll);
     }
 
-    public MiraCore core() {
-        return core;
-    }
+    public MiraCore core() { return core; }
 
     public boolean miraSpawnersAvailable() {
         try {
             Class<?> apiClass = Class.forName("com.mira.spawners.api.MiraSpawnersApi");
             return core.services().get(apiClass).isPresent();
-        } catch (ClassNotFoundException ex) {
-            return false;
-        }
+        } catch (ClassNotFoundException ex) { return false; }
     }
 
     private void migrateConfiguration() {
         int version = getConfig().getInt("config-version", 1);
-        if (version < 2) {
-            if (getConfig().getInt("opening.animation-ticks", 60) == 60) {
-                getConfig().set("opening.animation-ticks", 120);
-            }
-        }
+        if (version < 2 && getConfig().getInt("opening.animation-ticks", 60) == 60) getConfig().set("opening.animation-ticks", 120);
         if (version < 3) {
             if (!getConfig().contains("holograms.enabled")) getConfig().set("holograms.enabled", true);
             if (!getConfig().contains("holograms.height")) getConfig().set("holograms.height", 1.65D);
         }
-        if (version < 3) {
-            getConfig().set("config-version", 3);
+        if (version < 4) {
+            if (!getConfig().contains("rare-win.rarities")) getConfig().set("rare-win.rarities", java.util.List.of("legendary", "mythic", "jackpot"));
+            if (!getConfig().contains("rare-win.message")) getConfig().set("rare-win.message", "&6[Jackpot] &f%player% &7won %reward% &7from %crate%&7!");
+            getConfig().set("config-version", 4);
             saveConfig();
         }
     }
