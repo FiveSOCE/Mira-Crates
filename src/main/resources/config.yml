@@ -1,4 +1,4 @@
-config-version: 3
+config-version: 4
 
 opening:
   animation-ticks: 120
@@ -12,6 +12,21 @@ interaction:
 holograms:
   enabled: true
   height: 1.65
+
+rare-win:
+  rarities:
+    - legendary
+    - mythic
+    - jackpot
+  message: "&6[Jackpot] &f%player% &7won %reward% &7from %crate%&7!"
+
+# Add crate IDs here for date-limited seasonal availability.
+# Times use ISO-8601 UTC timestamps.
+seasonal-crates:
+  example_christmas:
+    enabled: false
+    start: "2026-12-01T00:00:00Z"
+    end: "2027-01-01T00:00:00Z"
 
 history:
   enabled: true
