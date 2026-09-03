@@ -42,50 +42,24 @@ public final class OpeningService {
         this.seasons = seasons;
     }
 
-    public boolean attemptOpen(Player player, String crateId, boolean bypassRequirements) {
-        return attemptOpen(player, crateId, bypassRequirements, false, false);
-    }
-
-    public boolean attemptPhysicalOpen(Player player, String crateId, boolean quickOpen) {
-        return attemptOpen(player, crateId, false, quickOpen, true);
-    }
+    public boolean attemptOpen(Player player, String crateId, boolean bypassRequirements) { return attemptOpen(player, crateId, bypassRequirements, false, false); }
+    public boolean attemptPhysicalOpen(Player player, String crateId, boolean quickOpen) { return attemptOpen(player, crateId, false, quickOpen, true); }
 
     private boolean attemptOpen(Player player, String crateId, boolean bypassRequirements,
                                 boolean quickOpen, boolean requireHeldKey) {
-        if (sessions.containsKey(player.getUniqueId())) {
-            core.messages().send(player, "&cYou already have a crate opening in progress.");
-            return false;
-        }
+        if (sessions.containsKey(player.getUniqueId())) { core.messages().send(player, "&cYou already have a crate opening in progress."); return false; }
         CrateDefinition crate = definitions.crate(crateId).orElse(null);
-        if (crate == null) {
-            core.messages().send(player, "&cUnknown crate: " + crateId);
-            return false;
-        }
-        if (!bypassRequirements && !seasons.active(crate.id())) {
-            core.messages().send(player, "&cThis seasonal crate is not currently active. &7(" + seasons.window(crate.id()) + ")");
-            return false;
-        }
-        if (!bypassRequirements && !player.hasPermission("miracrates.use")) {
-            core.messages().send(player, "&cYou do not have permission to open crates.");
-            return false;
-        }
-        if (!bypassRequirements && crate.keyIds().isEmpty()) {
-            core.messages().send(player, "&cThis crate has no valid key configured and cannot be opened.");
-            return false;
-        }
+        if (crate == null) { core.messages().send(player, "&cUnknown crate: " + crateId); return false; }
+        if (!bypassRequirements && !seasons.active(crate.id())) { core.messages().send(player, "&cThis seasonal crate is not currently active. &7(" + seasons.window(crate.id()) + ")"); return false; }
+        if (!bypassRequirements && !player.hasPermission("miracrates.use")) { core.messages().send(player, "&cYou do not have permission to open crates."); return false; }
+        if (!bypassRequirements && crate.keyIds().isEmpty()) { core.messages().send(player, "&cThis crate has no valid key configured and cannot be opened."); return false; }
         if (!bypassRequirements) {
             long remaining = playerData.cooldownRemainingSeconds(player.getUniqueId(), crate.id(), crate.cooldownSeconds());
-            if (remaining > 0L) {
-                core.messages().send(player, "&eYou can open this crate again in &f" + remaining + "s&e.");
-                return false;
-            }
+            if (remaining > 0L) { core.messages().send(player, "&eYou can open this crate again in &f" + remaining + "s&e."); return false; }
         }
 
         RewardRoll roll = rewards.roll(player, crate).orElse(null);
-        if (roll == null) {
-            core.messages().send(player, "&cThis crate has no eligible rewards configured.");
-            return false;
-        }
+        if (roll == null) { core.messages().send(player, "&cThis crate has no eligible rewards configured."); return false; }
 
         String keyUsed = null;
         if (!bypassRequirements) {
@@ -133,9 +107,7 @@ public final class OpeningService {
                     RewardDefinition visual = visualPool.get(ThreadLocalRandom.current().nextInt(visualPool.size()));
                     session.inventory.setItem(13, rewards.displayItem(session.player, session.crate, visual));
                 }
-                if (elapsed >= duration) {
-                    cancel(); session.task = null; finish(session);
-                }
+                if (elapsed >= duration) { cancel(); session.task = null; finish(session); }
             }
         };
         session.task = task;
@@ -167,7 +139,7 @@ public final class OpeningService {
                     .replace("%player%", player.getName())
                     .replace("%reward%", roll.reward().displayName())
                     .replace("%crate%", crate.displayName());
-            Bukkit.broadcast(core.messages().parse(message));
+            Bukkit.broadcast(core.messages().prefix().append(core.messages().parse(message)));
             core.milestones().award(player.getUniqueId(), "miracrates.jackpot", "MiraCrates",
                     Map.of("crate", crate.id(), "reward", roll.reward().id(), "rarity", roll.reward().rarityId()));
         }
@@ -176,8 +148,7 @@ public final class OpeningService {
 
     private boolean isRare(RewardDefinition reward) {
         if (reward.broadcast()) return true;
-        return plugin.getConfig().getStringList("rare-win.rarities").stream()
-                .anyMatch(rarity -> rarity.equalsIgnoreCase(reward.rarityId()));
+        return plugin.getConfig().getStringList("rare-win.rarities").stream().anyMatch(rarity -> rarity.equalsIgnoreCase(reward.rarityId()));
     }
 
     private static void fillFrame(Inventory inventory) {
