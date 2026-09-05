@@ -92,13 +92,23 @@ public final class RewardEngine {
 
     public ItemStack displayItem(Player player, CrateDefinition crate, RewardDefinition reward) {
         ItemStack base = reward.item();
-        ItemStack item = base == null ? new ItemStack(reward.icon() == null ? Material.CHEST : reward.icon()) : base;
+        ItemStack item = base == null
+                ? new ItemStack(reward.icon() == null ? Material.CHEST : reward.icon())
+                : base.clone();
         item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), reward.amount())));
+
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(core.messages().parse(reward.displayName()).decoration(TextDecoration.ITALIC, false));
-        List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
-        definitions.rarity(reward.rarityId()).ifPresent(rarity -> lore.add(core.messages().parse("&7Rarity: " + rarity.displayName()).decoration(TextDecoration.ITALIC, false)));
-        lore.add(core.messages().parse(String.format(Locale.ROOT, "&7Chance: &f%.3f%%", chance(player, crate, reward) * 100.0D)).decoration(TextDecoration.ITALIC, false));
+        if (base == null) {
+            meta.displayName(core.messages().parse(reward.displayName()).decoration(TextDecoration.ITALIC, false));
+        }
+
+        // Preserve the real reward's existing name/lore/enchants/PDC/model data for previews.
+        // MiraCrates only appends the public chance. Rarity is intentionally hidden.
+        List<net.kyori.adventure.text.Component> lore =
+                meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
+        if (!lore.isEmpty()) lore.add(net.kyori.adventure.text.Component.empty());
+        lore.add(core.messages().parse(String.format(Locale.ROOT, "&7Chance: &f%.3f%%",
+                chance(player, crate, reward) * 100.0D)).decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
         item.setItemMeta(meta);
         return item;
