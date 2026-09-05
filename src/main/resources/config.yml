@@ -5,6 +5,8 @@ opening:
   slider-steps: 40
   slider-interval-ticks: 2
   winner-hold-ticks: 8
+  # Close the opening GUI 3 seconds after the final reward finishes.
+  auto-close-delay-ticks: 60
 
 interaction:
   preview-on-left-click: true
