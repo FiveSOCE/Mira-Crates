@@ -93,27 +93,60 @@ public final class OpeningService {
     public void shutdown() { for (Session session : new ArrayList<>(sessions.values())) finish(session); }
 
     private void startAnimation(Session session) {
-        int interval = Math.max(1, plugin.getConfig().getInt("opening.roulette-interval-ticks", 4));
-        int duration = Math.max(interval, plugin.getConfig().getInt("opening.animation-ticks", 120));
+        int interval = Math.max(1, plugin.getConfig().getInt("opening.slider-interval-ticks", 2));
+        int steps = Math.max(12, plugin.getConfig().getInt("opening.slider-steps", 24));
         List<RewardDefinition> visualPool = session.crate.rewards().stream()
                 .filter(reward -> reward.weight() > 0.0D)
-                .filter(reward -> reward.permission() == null || reward.permission().isBlank() || session.player.hasPermission(reward.permission()))
+                .filter(reward -> reward.permission() == null || reward.permission().isBlank()
+                        || session.player.hasPermission(reward.permission()))
                 .toList();
 
+        if (visualPool.isEmpty()) {
+            finish(session);
+            return;
+        }
+
+        // Build the reel up-front. The real reward was already rolled before the GUI opened,
+        // so the animation is presentation-only and cannot reroll or alter the outcome.
+        List<RewardDefinition> reel = new ArrayList<>(steps + 9);
+        for (int i = 0; i < steps + 9; i++) {
+            reel.add(visualPool.get(ThreadLocalRandom.current().nextInt(visualPool.size())));
+        }
+        // The selector is the middle slot (13), i.e. offset 4 in the 9-slot reel.
+        reel.set(steps + 4, session.roll.reward());
+
         BukkitRunnable task = new BukkitRunnable() {
-            private int elapsed;
-            @Override public void run() {
-                if (!sessions.containsKey(session.player.getUniqueId())) { cancel(); return; }
-                elapsed += interval;
-                if (!visualPool.isEmpty()) {
-                    RewardDefinition visual = visualPool.get(ThreadLocalRandom.current().nextInt(visualPool.size()));
-                    session.inventory.setItem(13, rewards.displayItem(session.player, session.crate, visual));
+            private int position;
+
+            @Override
+            public void run() {
+                if (!sessions.containsKey(session.player.getUniqueId())) {
+                    cancel();
+                    return;
                 }
-                if (elapsed >= duration) { cancel(); session.task = null; finish(session); }
+
+                renderReel(session, reel, position);
+                if (position >= steps) {
+                    cancel();
+                    session.task = null;
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (sessions.containsKey(session.player.getUniqueId())) finish(session);
+                    }, Math.max(1L, plugin.getConfig().getLong("opening.winner-hold-ticks", 8L)));
+                    return;
+                }
+                position++;
             }
         };
         session.task = task;
         task.runTaskTimer(plugin, 0L, interval);
+    }
+
+    private void renderReel(Session session, List<RewardDefinition> reel, int position) {
+        for (int offset = 0; offset < 9; offset++) {
+            RewardDefinition visual = reel.get(position + offset);
+            session.inventory.setItem(9 + offset,
+                    rewards.displayItem(session.player, session.crate, visual));
+        }
     }
 
     private void finish(Session session) {
@@ -169,7 +202,13 @@ public final class OpeningService {
 
     private static void fillFrame(Inventory inventory) {
         ItemStack glass = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
-        for (int slot = 0; slot < inventory.getSize(); slot++) if (slot != 13) inventory.setItem(slot, glass);
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            if (slot < 9 || slot > 17) inventory.setItem(slot, glass);
+        }
+
+        // Selector markers above and below the winning center slot.
+        inventory.setItem(4, new ItemStack(Material.YELLOW_STAINED_GLASS_PANE));
+        inventory.setItem(22, new ItemStack(Material.YELLOW_STAINED_GLASS_PANE));
     }
 
     private static final class Session {
