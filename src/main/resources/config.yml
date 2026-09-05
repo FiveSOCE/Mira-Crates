@@ -1,8 +1,8 @@
-config-version: 5
+config-version: 6
 
 opening:
   # Fast CS2-style horizontal reward reel.
-  slider-steps: 24
+  slider-steps: 40
   slider-interval-ticks: 2
   winner-hold-ticks: 8
 
