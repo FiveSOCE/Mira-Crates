@@ -1,8 +1,10 @@
-config-version: 4
+config-version: 5
 
 opening:
-  animation-ticks: 120
-  roulette-interval-ticks: 4
+  # Fast CS2-style horizontal reward reel.
+  slider-steps: 24
+  slider-interval-ticks: 2
+  winner-hold-ticks: 8
 
 interaction:
   preview-on-left-click: true
