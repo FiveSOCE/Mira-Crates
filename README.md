@@ -4,7 +4,9 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.3**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.3/MiraCrates-0.3.3.jar)
+[**Download MiraCrates v0.3.6**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.6/MiraCrates-0.3.6.jar)
+
+[View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
 ## Requirements / Dependencies
 
@@ -56,3 +58,7 @@ Player crate interaction is not command-driven: previewing uses `miracrates.prev
 ## MiraCosmetics Integration (0.3.5)
 
 Adds MiraCosmetics crate opening and reward-rarity visuals and fixes the stale CI artifact/release version path.
+
+## MiraCosmetics Audio Integration (0.3.6)
+
+MiraCosmetics audio hooks add rising opening plings, rarity-specific reward sounds and a 20-block audio-only celebration for Legendary/Mythic rewards while preserving the opener's existing reward visuals.
