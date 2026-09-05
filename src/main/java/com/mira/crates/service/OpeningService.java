@@ -6,6 +6,7 @@ import com.mira.crates.gui.MiraInventoryHolder;
 import com.mira.crates.model.CrateDefinition;
 import com.mira.crates.model.RewardDefinition;
 import com.mira.crates.model.RewardRoll;
+import com.mira.crates.util.CosmeticsBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -74,6 +75,7 @@ public final class OpeningService {
 
         if (quickOpen) return complete(player, crate, roll, keyUsed);
 
+        CosmeticsBridge.play(player, "crate_open", player.getLocation());
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.OPENING, crate.id(), 0);
         Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse(crate.displayName() + " &8Opening"));
         holder.bind(inventory);
@@ -132,6 +134,7 @@ public final class OpeningService {
         playerData.markOpened(player.getUniqueId(), crate.id());
         history.record(player, crate.id(), roll, keyUsed);
         core.messages().send(player, "&aYou won " + roll.reward().displayName() + "&a!");
+        CosmeticsBridge.play(player, cosmeticRewardEvent(roll.reward()), player.getLocation());
 
         if (isRare(roll.reward())) {
             jackpots.record(player, crate, roll.reward());
@@ -144,6 +147,13 @@ public final class OpeningService {
                     Map.of("crate", crate.id(), "reward", roll.reward().id(), "rarity", roll.reward().rarityId()));
         }
         return true;
+    }
+
+    private String cosmeticRewardEvent(RewardDefinition reward) {
+        String rarity = reward.rarityId() == null ? "" : reward.rarityId().toLowerCase(Locale.ROOT);
+        if (rarity.contains("legend") || rarity.contains("mythic")) return "crate_reward_legendary";
+        if (rarity.contains("rare") || rarity.contains("epic")) return "crate_reward_rare";
+        return "crate_reward_common";
     }
 
     private boolean isRare(RewardDefinition reward) {
