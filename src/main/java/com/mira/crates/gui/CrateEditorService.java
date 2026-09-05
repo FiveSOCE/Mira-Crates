@@ -476,11 +476,13 @@ public final class CrateEditorService {
         private final ItemStack item;
         private double chance;
         private final String id;
+        private String rarityId;
 
-        private DraftReward(ItemStack item, double chance, String id) {
+        private DraftReward(ItemStack item, double chance, String id, String rarityId) {
             this.item = item.clone();
             this.chance = roundChance(chance);
             this.id = id;
+            this.rarityId = rarityId == null || rarityId.isBlank() ? "common" : rarityId;
         }
     }
 }
