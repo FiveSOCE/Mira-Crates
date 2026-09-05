@@ -4,7 +4,7 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.11**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.11/MiraCrates-0.3.11.jar)
+[**Download MiraCrates v0.3.12**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.12/MiraCrates-0.3.12.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -107,3 +107,15 @@ The Edit Crate GUI now exposes MiraCrates' existing server-console reward backen
 - existing installs using the old untouched 24-step default are migrated to 40 automatically
 - manually customised slider-step values are preserved
 - opening audio is now fired once per actual reel movement instead of using the old independent timed sequence
+
+
+## Reward Naming & Command Voucher Presentation (0.3.12)
+
+- crate win chat now uses the actual ItemStack display name for item rewards, preserving custom colours/components
+- unnamed vanilla items fall back to their proper translated Minecraft item name instead of material/config placeholders
+- jackpot/rare-win broadcasts also preserve the actual reward item name
+- command rewards are displayed as PAPER rather than command blocks
+- creating a command reward now asks for the console command and then its player-facing reward name
+- command reward names support colour codes
+- command rewards can be renamed later from the reward detail/chance editor
+- the configured command reward name is used consistently in the editor, preview, slider and win chat
