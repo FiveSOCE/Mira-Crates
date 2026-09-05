@@ -35,19 +35,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.12
-          path: build/libs/MiraCrates-0.3.12.jar
+          name: MiraCrates-0.3.13
+          path: build/libs/MiraCrates-0.3.13.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.12 release if missing
+      - name: Publish v0.3.13 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.3.12 >/dev/null 2>&1; then
-            gh release create v0.3.12 \
-              build/libs/MiraCrates-0.3.12.jar \
+          if ! gh release view v0.3.13 >/dev/null 2>&1; then
+            gh release create v0.3.13 \
+              build/libs/MiraCrates-0.3.13.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCrates v0.3.12" \
-              --notes "Uses the real ItemStack display name and colours in crate win chat and jackpot broadcasts, with proper vanilla item-name fallback. Command rewards now display as paper, require an editable reward name during creation, and can be renamed later from the reward editor."
+              --title "MiraCrates v0.3.13" \
+              --notes "Adds per-crate 1-5 sequential reward rolls in the CS2-style opening GUI, keeps the GUI open through every roll, shows roll progress, and auto-closes three seconds after the final reward. Also routes spin ticks through the explicit Cosmetics audio bridge."
           fi
