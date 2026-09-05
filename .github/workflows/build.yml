@@ -35,19 +35,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.10
-          path: build/libs/MiraCrates-0.3.10.jar
+          name: MiraCrates-0.3.11
+          path: build/libs/MiraCrates-0.3.11.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.10 release if missing
+      - name: Publish v0.3.11 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.3.10 >/dev/null 2>&1; then
-            gh release create v0.3.10 \
-              build/libs/MiraCrates-0.3.10.jar \
+          if ! gh release view v0.3.11 >/dev/null 2>&1; then
+            gh release create v0.3.11 \
+              build/libs/MiraCrates-0.3.11.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCrates v0.3.10" \
-              --notes "Adds GUI-managed console command rewards. Admins can add a server-level command reward from Edit Crate, use %player% for the winner, and configure its chance and rarity like item rewards. Existing COMMAND rewards become editable in the same reward grid."
+              --title "MiraCrates v0.3.11" \
+              --notes "Extends the CS2-style horizontal crate reel from the old 24-step default to 40 steps while preserving its current speed, and synchronizes a dedicated crate spin tick event to every reel movement."
           fi
