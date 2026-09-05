@@ -358,7 +358,7 @@ public final class CrateEditorService {
         inventory.setItem(16, GuiItems.item(Material.COMPARATOR, core.messages().parse("&fAuto Balance Chances"), List.of(
                 line("&7Splits 100% evenly between all item rewards."),
                 line("&7Only use this when you want to overwrite current chances."))));
-        inventory.setItem(17, GuiItems.item(draft.winsPerOpen > 1 ? Material.MULTISHOT : Material.ARROW,
+        inventory.setItem(17, GuiItems.item(draft.winsPerOpen > 1 ? Material.SPECTRAL_ARROW : Material.ARROW,
                 core.messages().parse("&fWins Per Open: &d" + draft.winsPerOpen), List.of(
                         line(draft.winsPerOpen == 1
                                 ? "&7Single-win crate."
