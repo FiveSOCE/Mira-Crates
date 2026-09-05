@@ -464,6 +464,9 @@ public final class CrateEditorService {
         ItemStack item = reward.item.clone();
         item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), item.getAmount())));
         ItemMeta meta = item.getItemMeta();
+        if (reward.type == RewardType.COMMAND) {
+            meta.displayName(line(reward.displayName));
+        }
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
         lore.add(Component.empty());
         if (reward.type == RewardType.COMMAND) {
