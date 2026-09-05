@@ -4,7 +4,7 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.7**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.7/MiraCrates-0.3.7.jar)
+[**Download MiraCrates v0.3.9**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.9/MiraCrates-0.3.9.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -69,3 +69,16 @@ MiraCosmetics audio hooks add rising opening plings, rarity-specific reward soun
 Opening, common and rare crate sounds remain actioning-player only.
 
 Legendary/mythic reward audio is now server-wide while the legendary visual effect remains scoped to the player opening the crate.
+
+
+## Crate UX Polish (0.3.9)
+
+- opening animation is now a faster CS2-style 9-item horizontal slider with the real pre-rolled reward landing in the center selector
+- reward chance is now the sole probability authority; changing rarity does not secretly alter the configured chance
+- Shift-left-click a reward in the crate editor to cycle Common, Rare, Legendary and Mythic rarity categories
+- existing reward rarity is preserved when editing and saved back correctly
+- Common and Rare use their matching reward sounds; Legendary and Mythic share the existing Legendary/Mythic celebration path
+- crate previews preserve the real reward ItemStack metadata, including custom item names, lore, enchantments, model/PDC data and other metadata
+- player previews no longer display rarity or sort by rarity
+- every visible reward always appends its exact chance percentage
+- Mythic is automatically added as a built-in rarity option on existing installations without overwriting existing rarity definitions
