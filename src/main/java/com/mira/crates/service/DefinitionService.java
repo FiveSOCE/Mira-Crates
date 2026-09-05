@@ -42,9 +42,31 @@ public final class DefinitionService {
         keys.clear();
         rarities.clear();
         loadRarities();
+        ensureBuiltInRarities();
         loadKeys();
         loadCrates();
         ensureEveryCrateHasKey();
+    }
+
+    private void ensureBuiltInRarities() {
+        boolean changed = false;
+        if (!rarities.containsKey("common")) {
+            rarities.put("common", new RarityDefinition("common", "&fCommon", 1.0D, Material.WHITE_DYE));
+            changed = true;
+        }
+        if (!rarities.containsKey("rare")) {
+            rarities.put("rare", new RarityDefinition("rare", "&bRare", 1.0D, Material.DIAMOND));
+            changed = true;
+        }
+        if (!rarities.containsKey("legendary")) {
+            rarities.put("legendary", new RarityDefinition("legendary", "&6Legendary", 1.0D, Material.NETHER_STAR));
+            changed = true;
+        }
+        if (!rarities.containsKey("mythic")) {
+            rarities.put("mythic", new RarityDefinition("mythic", "&dMythic", 1.0D, Material.AMETHYST_SHARD));
+            changed = true;
+        }
+        if (changed) saveRarities();
     }
 
     public Collection<CrateDefinition> crates() {
