@@ -4,7 +4,7 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.12**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.12/MiraCrates-0.3.12.jar)
+[**Download MiraCrates v0.3.13**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.13/MiraCrates-0.3.13.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -119,3 +119,21 @@ The Edit Crate GUI now exposes MiraCrates' existing server-console reward backen
 - command reward names support colour codes
 - command rewards can be renamed later from the reward detail/chance editor
 - the configured command reward name is used consistently in the editor, preview, slider and win chat
+
+
+## Multi-Win Sequential Openings (0.3.13)
+
+- each crate now has a **Wins Per Open** setting in Edit Crate
+- supported values are 1 through 5
+- 1 is the normal single-win mode
+- 2-5 enables sequential multi-win opening
+- left-click increases wins; right-click decreases wins
+- every win receives its own full CS2-style reel animation
+- the next reel does not begin until the previous reel has landed and delivered its reward
+- the opening GUI stays alive for the entire sequence
+- multi-win openings show the current reward roll number in the GUI
+- after the final reward completes, MiraCrates waits 3 seconds before closing the opening GUI
+- the delayed close only closes the crate GUI if it is still the player's current inventory
+- multi-win delivery failures do not refund a whole key after other rewards have already succeeded
+- if every queued reward fails, the consumed key is refunded
+- crate spin ticks now use the explicit audio-only MiraCosmetics bridge
