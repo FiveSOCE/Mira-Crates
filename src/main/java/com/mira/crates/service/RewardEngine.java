@@ -32,21 +32,17 @@ public final class RewardEngine {
     public Optional<RewardRoll> roll(Player player, CrateDefinition crate) {
         List<RewardDefinition> eligible = crate.rewards().stream()
                 .filter(reward -> reward.weight() > 0.0D)
-                .filter(reward -> reward.permission() == null || reward.permission().isBlank() || player.hasPermission(reward.permission()))
+                .filter(reward -> reward.permission() == null || reward.permission().isBlank()
+                        || player.hasPermission(reward.permission()))
                 .filter(reward -> definitions.rarity(reward.rarityId()).isPresent())
                 .toList();
         if (eligible.isEmpty()) return Optional.empty();
 
-        List<RarityDefinition> eligibleRarities = definitions.rarities().stream()
-                .filter(rarity -> rarity.weight() > 0.0D)
-                .filter(rarity -> eligible.stream().anyMatch(reward -> reward.rarityId().equals(rarity.id())))
-                .toList();
-        Optional<RarityDefinition> rarity = WeightedPicker.pick(eligibleRarities, RarityDefinition::weight, ThreadLocalRandom.current());
-        if (rarity.isEmpty()) return Optional.empty();
-
-        List<RewardDefinition> inRarity = eligible.stream().filter(reward -> reward.rarityId().equals(rarity.get().id())).toList();
-        return WeightedPicker.pick(inRarity, RewardDefinition::weight, ThreadLocalRandom.current())
-                .map(reward -> new RewardRoll(rarity.get(), reward));
+        // Reward weight is the actual public chance authority. Rarity is presentation
+        // metadata (sounds/broadcast classification), not a hidden second probability roll.
+        return WeightedPicker.pick(eligible, RewardDefinition::weight, ThreadLocalRandom.current())
+                .flatMap(reward -> definitions.rarity(reward.rarityId())
+                        .map(rarity -> new RewardRoll(rarity, reward)));
     }
 
     public boolean grant(Player player, RewardRoll roll) {
@@ -71,23 +67,18 @@ public final class RewardEngine {
 
     public double chance(Player player, CrateDefinition crate, RewardDefinition target) {
         if (target.weight() <= 0.0D) return 0.0D;
-        if (target.permission() != null && !target.permission().isBlank() && !player.hasPermission(target.permission())) return 0.0D;
-        List<RewardDefinition> eligible = crate.rewards().stream()
+        if (target.permission() != null && !target.permission().isBlank()
+                && !player.hasPermission(target.permission())) return 0.0D;
+        if (definitions.rarity(target.rarityId()).isEmpty()) return 0.0D;
+
+        double total = crate.rewards().stream()
                 .filter(reward -> reward.weight() > 0.0D)
-                .filter(reward -> reward.permission() == null || reward.permission().isBlank() || player.hasPermission(reward.permission()))
+                .filter(reward -> reward.permission() == null || reward.permission().isBlank()
+                        || player.hasPermission(reward.permission()))
                 .filter(reward -> definitions.rarity(reward.rarityId()).isPresent())
-                .toList();
-        List<RarityDefinition> activeRarities = definitions.rarities().stream()
-                .filter(rarity -> rarity.weight() > 0.0D)
-                .filter(rarity -> eligible.stream().anyMatch(reward -> reward.rarityId().equals(rarity.id())))
-                .toList();
-        double rarityTotal = activeRarities.stream().mapToDouble(RarityDefinition::weight).sum();
-        RarityDefinition targetRarity = definitions.rarity(target.rarityId()).orElse(null);
-        if (targetRarity == null || rarityTotal <= 0.0D) return 0.0D;
-        double rewardTotal = eligible.stream().filter(reward -> reward.rarityId().equals(target.rarityId()))
-                .mapToDouble(RewardDefinition::weight).sum();
-        if (rewardTotal <= 0.0D) return 0.0D;
-        return (targetRarity.weight() / rarityTotal) * (target.weight() / rewardTotal);
+                .mapToDouble(RewardDefinition::weight)
+                .sum();
+        return total <= 0.0D ? 0.0D : target.weight() / total;
     }
 
     public ItemStack displayItem(Player player, CrateDefinition crate, RewardDefinition reward) {
