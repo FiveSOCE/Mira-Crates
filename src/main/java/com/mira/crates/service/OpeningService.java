@@ -7,6 +7,7 @@ import com.mira.crates.model.CrateDefinition;
 import com.mira.crates.model.RewardDefinition;
 import com.mira.crates.model.RewardRoll;
 import com.mira.crates.util.CosmeticsBridge;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -167,7 +168,10 @@ public final class OpeningService {
         }
         playerData.markOpened(player.getUniqueId(), crate.id());
         history.record(player, crate.id(), roll, keyUsed);
-        core.messages().send(player, "&aYou won " + roll.reward().displayName() + "&a!");
+        player.sendMessage(core.messages().prefix()
+                .append(core.messages().parse("&aYou won "))
+                .append(rewards.rewardNameComponent(roll.reward()))
+                .append(core.messages().parse("&a!")));
         String cosmeticEvent = cosmeticRewardEvent(roll.reward());
         if ("crate_reward_legendary".equals(cosmeticEvent)) {
             CosmeticsBridge.playVisualOnly(player, cosmeticEvent, player.getLocation());
@@ -178,11 +182,11 @@ public final class OpeningService {
 
         if (isRare(roll.reward())) {
             jackpots.record(player, crate, roll.reward());
-            String message = plugin.getConfig().getString("rare-win.message", "&6[Jackpot] &f%player% &7won %reward% &7from %crate%&7!")
+            String message = plugin.getConfig().getString("rare-win.message",
+                    "&6[Jackpot] &f%player% &7won %reward% &7from %crate%&7!")
                     .replace("%player%", player.getName())
-                    .replace("%reward%", roll.reward().displayName())
                     .replace("%crate%", crate.displayName());
-            Bukkit.broadcast(core.messages().prefix().append(core.messages().parse(message)));
+            Bukkit.broadcast(core.messages().prefix().append(formatRewardMessage(message, roll.reward())));
             core.milestones().award(player.getUniqueId(), "miracrates.jackpot", "MiraCrates",
                     Map.of("crate", crate.id(), "reward", roll.reward().id(), "rarity", roll.reward().rarityId()));
         }
