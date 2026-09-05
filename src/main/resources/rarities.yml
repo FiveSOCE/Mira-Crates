@@ -11,3 +11,7 @@ rarities:
     name: "&6Legendary"
     weight: 5.0
     icon: NETHER_STAR
+  mythic:
+    name: "&dMythic"
+    weight: 1.0
+    icon: AMETHYST_SHARD
