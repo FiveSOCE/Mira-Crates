@@ -51,3 +51,8 @@ Player crate interaction is not command-driven: previewing uses `miracrates.prev
 | `miracrates.admin` | OP | Allows the admin GUI, crate editor, crate/key tools, physical crate conversion/removal and diagnostics. |
 | `miracrates.use` | Everyone | Allows opening deployed crates with a valid key. |
 | `miracrates.preview` | Everyone | Allows previewing deployed crate rewards by left-clicking. |
+
+
+## MiraCosmetics Integration (0.3.5)
+
+Adds MiraCosmetics crate opening and reward-rarity visuals and fixes the stale CI artifact/release version path.
