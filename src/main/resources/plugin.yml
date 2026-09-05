@@ -1,11 +1,11 @@
 name: MiraCrates
-version: 0.3.4
+version: 0.3.5
 main: com.mira.crates.MiraCratesPlugin
 api-version: '1.21'
 authors: [FiveS]
 description: GUI-first crates with rare-win broadcasts, jackpot data and seasonal activation windows.
 depend: [MiraCore]
-softdepend: [MiraSpawners, Holograms, PlaceholderAPI, MiraNPC]
+softdepend: [MiraSpawners, Holograms, PlaceholderAPI, MiraNPC, MiraCosmetics]
 
 commands:
   miracrates:
