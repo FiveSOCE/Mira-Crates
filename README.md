@@ -4,7 +4,7 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.9**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.9/MiraCrates-0.3.9.jar)
+[**Download MiraCrates v0.3.10**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.10/MiraCrates-0.3.10.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -82,3 +82,19 @@ Legendary/mythic reward audio is now server-wide while the legendary visual effe
 - player previews no longer display rarity or sort by rarity
 - every visible reward always appends its exact chance percentage
 - Mythic is automatically added as a built-in rarity option on existing installations without overwriting existing rarity definitions
+
+
+## Console Command Rewards (0.3.10)
+
+The Edit Crate GUI now exposes MiraCrates' existing server-console reward backend.
+
+- click **Add Command Reward**
+- type the console command in chat without the leading slash
+- use `%player%` for the player who wins the reward
+- command rewards appear in the same reward grid as item rewards
+- left-click edits chance
+- Shift-left-click changes rarity
+- right-click removes the reward
+- existing COMMAND rewards are loaded into the editor instead of being hidden/preserved-only
+- commands execute as the server console only after the crate result is finalized
+- normal player previews show the configured command reward presentation, not the raw server command
