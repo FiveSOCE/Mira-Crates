@@ -98,6 +98,11 @@ public final class DefinitionService {
     }
 
     public boolean createCrate(String id, String displayName, Material shulkerMaterial, List<RewardDefinition> rewards) {
+        return createCrate(id, displayName, shulkerMaterial, 1, rewards);
+    }
+
+    public boolean createCrate(String id, String displayName, Material shulkerMaterial, int winsPerOpen,
+                               List<RewardDefinition> rewards) {
         String normalized = Ids.normalize(id);
         if (!Ids.valid(normalized) || crates.containsKey(normalized) || !ShulkerMaterials.isCrateShulker(shulkerMaterial)) return false;
 
@@ -109,12 +114,19 @@ public final class DefinitionService {
         }
 
         crates.put(normalized, new CrateDefinition(normalized, displayName, shulkerMaterial,
-                List.of(companionKeyId), 0L, 1, rewards));
+                List.of(companionKeyId), 0L, winsPerOpen, rewards));
         saveCrates();
         return true;
     }
 
     public boolean updateCrate(String id, String displayName, Material shulkerMaterial, List<RewardDefinition> rewards) {
+        CrateDefinition existing = crates.get(Ids.normalize(id));
+        return updateCrate(id, displayName, shulkerMaterial,
+                existing == null ? 1 : existing.winsPerOpen(), rewards);
+    }
+
+    public boolean updateCrate(String id, String displayName, Material shulkerMaterial, int winsPerOpen,
+                               List<RewardDefinition> rewards) {
         String normalized = Ids.normalize(id);
         CrateDefinition existing = crates.get(normalized);
         if (existing == null || displayName == null || displayName.isBlank() || !ShulkerMaterials.isCrateShulker(shulkerMaterial)) return false;
