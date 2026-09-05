@@ -4,6 +4,7 @@ import com.mira.core.api.MiraCore;
 import com.mira.crates.MiraCratesPlugin;
 import com.mira.crates.model.*;
 import com.mira.crates.util.WeightedPicker;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -79,6 +80,18 @@ public final class RewardEngine {
                 .mapToDouble(RewardDefinition::weight)
                 .sum();
         return total <= 0.0D ? 0.0D : target.weight() / total;
+    }
+
+    public Component rewardNameComponent(RewardDefinition reward) {
+        if (reward.type() == RewardType.ITEM && reward.item() != null) {
+            ItemStack item = reward.item();
+            ItemMeta meta = item.getItemMeta();
+            if (meta.hasDisplayName() && meta.displayName() != null) {
+                return meta.displayName().decoration(TextDecoration.ITALIC, false);
+            }
+            return Component.translatable(item.getType().translationKey()).decoration(TextDecoration.ITALIC, false);
+        }
+        return core.messages().parse(reward.displayName()).decoration(TextDecoration.ITALIC, false);
     }
 
     public ItemStack displayItem(Player player, CrateDefinition crate, RewardDefinition reward) {
