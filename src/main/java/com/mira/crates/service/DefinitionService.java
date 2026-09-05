@@ -135,7 +135,7 @@ public final class DefinitionService {
                 ? List.of(ensureCompanionKey(existing.id(), displayName))
                 : existing.keyIds();
         crates.put(normalized, new CrateDefinition(existing.id(), displayName, shulkerMaterial, keyIds,
-                existing.cooldownSeconds(), existing.winsPerOpen(), rewards));
+                existing.cooldownSeconds(), winsPerOpen, rewards));
         saveCrates();
         return true;
     }
