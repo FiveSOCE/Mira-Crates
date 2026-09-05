@@ -193,6 +193,16 @@ public final class OpeningService {
         return true;
     }
 
+    private Component formatRewardMessage(String template, RewardDefinition reward) {
+        String[] parts = template.split("%reward%", -1);
+        Component out = Component.empty();
+        for (int i = 0; i < parts.length; i++) {
+            if (!parts[i].isEmpty()) out = out.append(core.messages().parse(parts[i]));
+            if (i < parts.length - 1) out = out.append(rewards.rewardNameComponent(reward));
+        }
+        return out;
+    }
+
     private String cosmeticRewardEvent(RewardDefinition reward) {
         String rarity = reward.rarityId() == null ? "" : reward.rarityId().toLowerCase(Locale.ROOT);
         if (rarity.contains("legend") || rarity.contains("mythic")) return "crate_reward_legendary";
