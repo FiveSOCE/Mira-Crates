@@ -77,15 +77,18 @@ public final class MenuListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        if (!crateEditor.isAwaitingName(player.getUniqueId())) return;
+        boolean nameInput = crateEditor.isAwaitingName(player.getUniqueId());
+        boolean commandInput = crateEditor.isAwaitingCommand(player.getUniqueId());
+        if (!nameInput && !commandInput) return;
 
         event.setCancelled(true);
         event.getRecipients().clear();
-        String crateName = event.getMessage();
+        String input = event.getMessage();
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!player.isOnline()) return;
-            crateEditor.submitChatName(player, crateName);
+            if (commandInput) crateEditor.submitChatCommand(player, input);
+            else crateEditor.submitChatName(player, input);
         });
     }
 
