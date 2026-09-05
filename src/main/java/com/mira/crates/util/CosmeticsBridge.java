@@ -5,6 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import java.util.UUID;
+
 public final class CosmeticsBridge {
     private CosmeticsBridge() { }
 
@@ -25,6 +27,21 @@ public final class CosmeticsBridge {
             if (viewer.getLocation().distanceSquared(location) <= radiusSquared) {
                 play(viewer, eventId, location);
             }
+        }
+    }
+
+    public static void playAudioNearbyExcept(Location location, String eventId, double radius, UUID excluded) {
+        if (location == null || location.getWorld() == null) return;
+        Plugin cosmetics = Bukkit.getPluginManager().getPlugin("MiraCosmetics");
+        if (cosmetics == null || !cosmetics.isEnabled()) return;
+        double radiusSquared = radius * radius;
+        for (Player viewer : location.getWorld().getPlayers()) {
+            if (excluded != null && excluded.equals(viewer.getUniqueId())) continue;
+            if (viewer.getLocation().distanceSquared(location) > radiusSquared) continue;
+            try {
+                cosmetics.getClass().getMethod("playAudioEvent", Player.class, String.class, Location.class)
+                        .invoke(cosmetics, viewer, eventId, location);
+            } catch (ReflectiveOperationException ignored) { }
         }
     }
 }
