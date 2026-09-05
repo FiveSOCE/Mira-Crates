@@ -35,19 +35,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.7
-          path: build/libs/MiraCrates-0.3.7.jar
+          name: MiraCrates-0.3.8
+          path: build/libs/MiraCrates-0.3.8.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.7 release if missing
+      - name: Publish v0.3.8 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.3.7 >/dev/null 2>&1; then
-            gh release create v0.3.7 \
-              build/libs/MiraCrates-0.3.7.jar \
+          if ! gh release view v0.3.8 >/dev/null 2>&1; then
+            gh release create v0.3.8 \
+              build/libs/MiraCrates-0.3.8.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCrates v0.3.7" \
-              --notes "Keeps normal crate sounds actioning-player only while making legendary reward audio server-wide. Legendary visuals remain scoped to the opening player."
+              --title "MiraCrates v0.3.8" \
+              --notes "Adds a faster CS2-style horizontal crate slider, per-reward Shift-left rarity editing with persistent Common/Rare/Legendary/Mythic presentation categories, metadata-faithful reward previews with always-visible exact chance percentages and hidden rarity labels, and makes explicit reward chance the sole probability authority."
           fi
