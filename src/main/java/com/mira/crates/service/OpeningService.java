@@ -134,7 +134,11 @@ public final class OpeningService {
         playerData.markOpened(player.getUniqueId(), crate.id());
         history.record(player, crate.id(), roll, keyUsed);
         core.messages().send(player, "&aYou won " + roll.reward().displayName() + "&a!");
-        CosmeticsBridge.play(player, cosmeticRewardEvent(roll.reward()), player.getLocation());
+        String cosmeticEvent = cosmeticRewardEvent(roll.reward());
+        CosmeticsBridge.play(player, cosmeticEvent, player.getLocation());
+        if ("crate_reward_legendary".equals(cosmeticEvent)) {
+            CosmeticsBridge.playAudioNearbyExcept(player.getLocation(), cosmeticEvent, 20.0D, player.getUniqueId());
+        }
 
         if (isRare(roll.reward())) {
             jackpots.record(player, crate, roll.reward());
