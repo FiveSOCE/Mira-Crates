@@ -139,10 +139,16 @@ public final class OpeningService {
         Session session = sessions.get(player.getUniqueId());
         if (session == null) return;
         if (session.task != null) session.task.cancel();
+        if (session.closeTask != null) session.closeTask.cancel();
+
         while (session.currentIndex < session.rolls.size()) {
-            finishCurrentReward(session);
-            if (!sessions.containsKey(player.getUniqueId())) break;
+            if (grantAndAnnounce(session.player, session.crate, session.currentRoll(), session.keyUsed)) {
+                session.successfulRewards++;
+            }
+            session.currentIndex++;
         }
+        finaliseOpen(session);
+        scheduleClose(session);
     }
 
     public void shutdown() {
@@ -150,10 +156,13 @@ public final class OpeningService {
             if (session.task != null) session.task.cancel();
             if (session.closeTask != null) session.closeTask.cancel();
             while (session.currentIndex < session.rolls.size()) {
-                grantAndAnnounce(session.player, session.crate, session.currentRoll(), session.keyUsed);
+                if (grantAndAnnounce(session.player, session.crate, session.currentRoll(), session.keyUsed)) {
+                    session.successfulRewards++;
+                }
                 session.currentIndex++;
             }
             finaliseOpen(session);
+            sessions.remove(session.player.getUniqueId());
         }
     }
 
