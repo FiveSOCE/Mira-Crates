@@ -4,7 +4,7 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.10**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.10/MiraCrates-0.3.10.jar)
+[**Download MiraCrates v0.3.11**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.11/MiraCrates-0.3.11.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -98,3 +98,12 @@ The Edit Crate GUI now exposes MiraCrates' existing server-console reward backen
 - existing COMMAND rewards are loaded into the editor instead of being hidden/preserved-only
 - commands execute as the server console only after the crate result is finalized
 - normal player previews show the configured command reward presentation, not the raw server command
+
+
+## Longer Synced Case Reel (0.3.11)
+
+- keeps the current fast CS2-style reel speed
+- extends the default slider from 24 to 40 movement steps
+- existing installs using the old untouched 24-step default are migrated to 40 automatically
+- manually customised slider-step values are preserved
+- opening audio is now fired once per actual reel movement instead of using the old independent timed sequence
