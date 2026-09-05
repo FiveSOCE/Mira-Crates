@@ -35,19 +35,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.6
-          path: build/libs/MiraCrates-0.3.6.jar
+          name: MiraCrates-0.3.7
+          path: build/libs/MiraCrates-0.3.7.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.6 release if missing
+      - name: Publish v0.3.7 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.3.6 >/dev/null 2>&1; then
-            gh release create v0.3.6 \
-              build/libs/MiraCrates-0.3.6.jar \
+          if ! gh release view v0.3.7 >/dev/null 2>&1; then
+            gh release create v0.3.7 \
+              build/libs/MiraCrates-0.3.7.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCrates v0.3.6" \
-              --notes "Adds the approved MiraCosmetics crate audio pass with rising opening plings, rarity-specific reward sounds and a 20-block legendary audio celebration."
+              --title "MiraCrates v0.3.7" \
+              --notes "Keeps normal crate sounds actioning-player only while making legendary reward audio server-wide. Legendary visuals remain scoped to the opening player."
           fi
