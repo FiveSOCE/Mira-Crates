@@ -122,6 +122,19 @@ public final class MiraCratesPlugin extends JavaPlugin {
             if (!getConfig().contains("rare-win.message")) getConfig().set("rare-win.message", "&6[Jackpot] &f%player% &7won %reward% &7from %crate%&7!");
             getConfig().set("config-version", 4);
             saveConfig();
+            version = 4;
+        }
+        if (version < 5) {
+            getConfig().set("config-version", 5);
+            saveConfig();
+            version = 5;
+        }
+        if (version < 6) {
+            if (getConfig().getInt("opening.slider-steps", 24) == 24) {
+                getConfig().set("opening.slider-steps", 40);
+            }
+            getConfig().set("config-version", 6);
+            saveConfig();
         }
     }
 }
