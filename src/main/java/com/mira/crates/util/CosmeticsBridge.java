@@ -23,6 +23,16 @@ public final class CosmeticsBridge {
         } catch (ReflectiveOperationException ignored) { }
     }
 
+    public static void playAudio(Player viewer, String eventId, Location location) {
+        if (viewer == null || eventId == null || location == null) return;
+        Plugin cosmetics = Bukkit.getPluginManager().getPlugin("MiraCosmetics");
+        if (cosmetics == null || !cosmetics.isEnabled()) return;
+        try {
+            cosmetics.getClass().getMethod("playAudioEvent", Player.class, String.class, Location.class)
+                    .invoke(cosmetics, viewer, eventId, location);
+        } catch (ReflectiveOperationException ignored) { }
+    }
+
     public static void playVisualOnly(Player viewer, String eventId, Location location) {
         if (viewer == null || eventId == null || location == null) return;
         Plugin cosmetics = Bukkit.getPluginManager().getPlugin("MiraCosmetics");
