@@ -47,7 +47,7 @@ public final class CrateEditorService {
         }
         awaitingNameInput.remove(player.getUniqueId());
         sessions.put(player.getUniqueId(), new Draft(null, "&fNew Crate", Material.PURPLE_SHULKER_BOX,
-                new ArrayList<>(), new ArrayList<>()));
+                1, new ArrayList<>(), new ArrayList<>()));
         openEditor(player);
     }
 
@@ -75,7 +75,7 @@ public final class CrateEditorService {
         }
         awaitingNameInput.remove(player.getUniqueId());
         sessions.put(player.getUniqueId(), new Draft(crate.id(), crate.displayName(),
-                ShulkerMaterials.normalise(crate.icon()), itemRewards, preserved));
+                ShulkerMaterials.normalise(crate.icon()), crate.winsPerOpen(), itemRewards, preserved));
         openEditor(player);
         return true;
     }
@@ -251,6 +251,12 @@ public final class CrateEditorService {
             openEditor(player);
             return;
         }
+        if (slot == 17) {
+            int direction = event.getClick().isRightClick() ? -1 : 1;
+            draft.winsPerOpen = Math.max(1, Math.min(5, draft.winsPerOpen + direction));
+            openEditor(player);
+            return;
+        }
         if (slot >= REWARD_FIRST_SLOT && slot < REWARD_FIRST_SLOT + REWARD_SLOTS) {
             int index = slot - REWARD_FIRST_SLOT;
             if (index >= draft.rewards.size()) return;
@@ -323,7 +329,7 @@ public final class CrateEditorService {
         holder.bind(inventory);
 
         ItemStack preview = crateItems.create(new CrateDefinition("preview", draft.displayName, draft.shulker,
-                List.of(), 0L, List.of()));
+                List.of(), 0L, draft.winsPerOpen, List.of()));
         ItemMeta previewMeta = preview.getItemMeta();
         previewMeta.lore(List.of(
                 line("&7This is the physical crate appearance."),
@@ -352,6 +358,14 @@ public final class CrateEditorService {
         inventory.setItem(16, GuiItems.item(Material.COMPARATOR, core.messages().parse("&fAuto Balance Chances"), List.of(
                 line("&7Splits 100% evenly between all item rewards."),
                 line("&7Only use this when you want to overwrite current chances."))));
+        inventory.setItem(17, GuiItems.item(draft.winsPerOpen > 1 ? Material.MULTISHOT : Material.ARROW,
+                core.messages().parse("&fWins Per Open: &d" + draft.winsPerOpen), List.of(
+                        line(draft.winsPerOpen == 1
+                                ? "&7Single-win crate."
+                                : "&7Multi-win crate: " + draft.winsPerOpen + " sequential case rolls."),
+                        line("&eLeft-click: increase"),
+                        line("&eRight-click: decrease"),
+                        line("&7Range: 1 to 5"))));
 
         for (int index = 0; index < draft.rewards.size() && index < REWARD_SLOTS; index++) {
             inventory.setItem(REWARD_FIRST_SLOT + index, rewardDisplay(draft.rewards.get(index)));
@@ -441,13 +455,13 @@ public final class CrateEditorService {
                 core.messages().send(player, "&cThat name cannot produce a valid crate ID. Use letters/numbers in the crate name.");
                 return;
             }
-            saved = definitions.createCrate(crateId, draft.displayName, draft.shulker, rewards);
+            saved = definitions.createCrate(crateId, draft.displayName, draft.shulker, draft.winsPerOpen, rewards);
             if (!saved && definitions.crate(crateId).isPresent()) {
                 core.messages().send(player, "&cA crate with that name already exists. Choose another name.");
                 return;
             }
         } else {
-            saved = definitions.updateCrate(crateId, draft.displayName, draft.shulker, rewards);
+            saved = definitions.updateCrate(crateId, draft.displayName, draft.shulker, draft.winsPerOpen, rewards);
         }
         if (!saved) {
             core.messages().send(player, "&cCould not save that crate.");
@@ -570,14 +584,16 @@ public final class CrateEditorService {
         private final String existingId;
         private String displayName;
         private Material shulker;
+        private int winsPerOpen;
         private final List<DraftReward> rewards;
         private final List<RewardDefinition> preservedRewards;
 
-        private Draft(String existingId, String displayName, Material shulker,
+        private Draft(String existingId, String displayName, Material shulker, int winsPerOpen,
                       List<DraftReward> rewards, List<RewardDefinition> preservedRewards) {
             this.existingId = existingId;
             this.displayName = displayName;
             this.shulker = shulker;
+            this.winsPerOpen = Math.max(1, Math.min(5, winsPerOpen));
             this.rewards = rewards;
             this.preservedRewards = preservedRewards;
         }
