@@ -63,7 +63,7 @@ public final class CrateEditorService {
             if (reward.type() == RewardType.ITEM && reward.item() != null) {
                 ItemStack item = reward.item().clone();
                 item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), reward.amount())));
-                itemRewards.add(new DraftReward(item, reward.weight(), reward.id()));
+                itemRewards.add(new DraftReward(item, reward.weight(), reward.id(), reward.rarityId()));
             } else {
                 preserved.add(reward);
             }
@@ -157,7 +157,7 @@ public final class CrateEditorService {
                 return;
             }
             ItemStack captured = cursor.clone();
-            draft.rewards.add(new DraftReward(captured, 0.0D, nextRewardId(draft)));
+            draft.rewards.add(new DraftReward(captured, 0.0D, nextRewardId(draft), defaultRarityId()));
             openEditor(player);
             return;
         }
@@ -173,7 +173,10 @@ public final class CrateEditorService {
         if (slot >= REWARD_FIRST_SLOT && slot < REWARD_FIRST_SLOT + REWARD_SLOTS) {
             int index = slot - REWARD_FIRST_SLOT;
             if (index >= draft.rewards.size()) return;
-            if (event.getClick().isRightClick()) {
+            if (event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_LEFT) {
+                cycleRarity(player, draft.rewards.get(index));
+                openEditor(player);
+            } else if (event.getClick().isRightClick()) {
                 draft.rewards.remove(index);
                 openEditor(player);
             } else {
@@ -272,6 +275,7 @@ public final class CrateEditorService {
         inventory.setItem(49, GuiItems.item(Material.PAPER, core.messages().parse("&fReward Chances"), List.of(
                 line(String.format(Locale.ROOT, "&7Total: &f%.2f%% / 100.00%%", total)),
                 line("&7Left-click a reward to edit its chance."),
+                line("&7Shift-left-click a reward to change rarity."),
                 line("&7Right-click a reward to remove it."))));
         inventory.setItem(50, GuiItems.item(Material.BARRIER, core.messages().parse("&cCancel"), List.of(
                 line("&7Discard this editing session."))));
@@ -321,7 +325,7 @@ public final class CrateEditorService {
             int amount = Math.max(1, stored.getAmount());
             stored.setAmount(1);
             String display = "&f" + pretty(stored.getType()) + (amount > 1 ? " x" + amount : "");
-            rewards.add(new RewardDefinition(draftReward.id, RewardType.ITEM, "common", roundChance(draftReward.chance),
+            rewards.add(new RewardDefinition(draftReward.id, RewardType.ITEM, draftReward.rarityId, roundChance(draftReward.chance),
                     display, stored.getType(), amount, "", false, stored, ""));
         }
 
@@ -359,11 +363,41 @@ public final class CrateEditorService {
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
         lore.add(Component.empty());
         lore.add(line(String.format(Locale.ROOT, "&7Chance: &f%.2f%%", reward.chance)));
+        definitions.rarity(reward.rarityId).ifPresent(rarity ->
+                lore.add(line("&7Rarity: " + rarity.displayName())));
         lore.add(line("&eLeft-click to edit chance"));
+        lore.add(line("&eShift-left-click to change rarity"));
         lore.add(line("&cRight-click to remove"));
         meta.lore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private String defaultRarityId() {
+        return definitions.rarity("common").map(rarity -> rarity.id())
+                .orElseGet(() -> definitions.rarities().stream().findFirst()
+                        .map(rarity -> rarity.id()).orElse("common"));
+    }
+
+    private void cycleRarity(Player player, DraftReward reward) {
+        List<com.mira.crates.model.RarityDefinition> rarities = new ArrayList<>(definitions.rarities());
+        if (rarities.isEmpty()) {
+            definitions.createRarity("common", 100.0D, "&fCommon");
+            reward.rarityId = "common";
+            core.messages().send(player, "&eNo rarities existed, so Common was created and selected.");
+            return;
+        }
+
+        int current = -1;
+        for (int i = 0; i < rarities.size(); i++) {
+            if (rarities.get(i).id().equalsIgnoreCase(reward.rarityId)) {
+                current = i;
+                break;
+            }
+        }
+        com.mira.crates.model.RarityDefinition next = rarities.get((current + 1 + rarities.size()) % rarities.size());
+        reward.rarityId = next.id();
+        core.messages().send(player, "&aReward rarity set to " + next.displayName() + "&a.");
     }
 
     private void autoBalance(Draft draft) {
