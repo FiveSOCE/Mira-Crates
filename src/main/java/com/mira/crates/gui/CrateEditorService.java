@@ -31,6 +31,7 @@ public final class CrateEditorService {
     private final CrateItemService crateItems;
     private final Map<UUID, Draft> sessions = new HashMap<>();
     private final Set<UUID> awaitingNameInput = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> awaitingCommandInput = ConcurrentHashMap.newKeySet();
 
     public CrateEditorService(MiraCore core, DefinitionService definitions, CrateItemService crateItems) {
         this.core = core;
@@ -63,7 +64,10 @@ public final class CrateEditorService {
             if (reward.type() == RewardType.ITEM && reward.item() != null) {
                 ItemStack item = reward.item().clone();
                 item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), reward.amount())));
-                itemRewards.add(new DraftReward(item, reward.weight(), reward.id(), reward.rarityId()));
+                itemRewards.add(DraftReward.item(item, reward.weight(), reward.id(), reward.rarityId()));
+            } else if (reward.type() == RewardType.COMMAND) {
+                itemRewards.add(DraftReward.command(reward.displayName(), reward.data(), reward.icon(),
+                        reward.weight(), reward.id(), reward.rarityId()));
             } else {
                 preserved.add(reward);
             }
@@ -77,6 +81,36 @@ public final class CrateEditorService {
 
     public boolean isAwaitingName(UUID playerId) {
         return awaitingNameInput.contains(playerId);
+    }
+
+    public boolean isAwaitingCommand(UUID playerId) {
+        return awaitingCommandInput.contains(playerId);
+    }
+
+    public void submitChatCommand(Player player, String message) {
+        UUID playerId = player.getUniqueId();
+        if (!awaitingCommandInput.remove(playerId)) return;
+        Draft draft = sessions.get(playerId);
+        if (draft == null) {
+            core.messages().send(player, "&cThat crate editing session expired.");
+            return;
+        }
+        String command = message == null ? "" : message.trim();
+        if (command.startsWith("/")) command = command.substring(1);
+        if (command.isBlank()) {
+            awaitingCommandInput.add(playerId);
+            core.messages().send(player, "&cCommand cannot be blank. Type the console command in chat.");
+            return;
+        }
+        if (draft.rewards.size() >= REWARD_SLOTS) {
+            core.messages().send(player, "&cThis crate already has the maximum number of editable rewards.");
+            openEditor(player);
+            return;
+        }
+        draft.rewards.add(DraftReward.command("&fCommand Reward", command, Material.COMMAND_BLOCK,
+                0.0D, nextRewardId(draft, "command"), defaultRarityId()));
+        core.messages().send(player, "&aAdded console command reward: &f/" + command);
+        openEditor(player);
     }
 
     public void submitChatName(Player player, String message) {
@@ -109,6 +143,7 @@ public final class CrateEditorService {
 
     public void cancelNameInput(UUID playerId) {
         awaitingNameInput.remove(playerId);
+        awaitingCommandInput.remove(playerId);
     }
 
     public void handleClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
@@ -157,8 +192,18 @@ public final class CrateEditorService {
                 return;
             }
             ItemStack captured = cursor.clone();
-            draft.rewards.add(new DraftReward(captured, 0.0D, nextRewardId(draft), defaultRarityId()));
+            draft.rewards.add(DraftReward.item(captured, 0.0D, nextRewardId(draft, "item"), defaultRarityId()));
             openEditor(player);
+            return;
+        }
+        if (slot == 15) {
+            if (draft.rewards.size() >= REWARD_SLOTS) {
+                core.messages().send(player, "&cThis editor currently supports up to " + REWARD_SLOTS + " editable rewards per crate.");
+                return;
+            }
+            awaitingCommandInput.add(player.getUniqueId());
+            player.closeInventory();
+            core.messages().send(player, "&eType the console command in chat. &7Use %player% for the winner. Do not include the leading slash.");
             return;
         }
         if (slot == 16) {
@@ -258,6 +303,10 @@ public final class CrateEditorService {
                 line("&7then click this button."),
                 line("&7Existing reward chances are not changed."),
                 line("&7The item is copied, not consumed."))));
+        inventory.setItem(15, GuiItems.item(Material.COMMAND_BLOCK, core.messages().parse("&dAdd Command Reward"), List.of(
+                line("&7Executes as the server console when won."),
+                line("&7Use &f%player% &7for the winning player's name."),
+                line("&eClick, then type the command in chat."))));
         inventory.setItem(16, GuiItems.item(Material.COMPARATOR, core.messages().parse("&fAuto Balance Chances"), List.of(
                 line("&7Splits 100% evenly between all item rewards."),
                 line("&7Only use this when you want to overwrite current chances."))));
@@ -321,12 +370,20 @@ public final class CrateEditorService {
 
         List<RewardDefinition> rewards = new ArrayList<>(draft.preservedRewards);
         for (DraftReward draftReward : draft.rewards) {
+            if (draftReward.type == RewardType.COMMAND) {
+                rewards.add(new RewardDefinition(draftReward.id, RewardType.COMMAND, draftReward.rarityId,
+                        roundChance(draftReward.chance), draftReward.displayName, draftReward.item.getType(),
+                        1, "", false, null, draftReward.data));
+                continue;
+            }
             ItemStack stored = draftReward.item.clone();
             int amount = Math.max(1, stored.getAmount());
             stored.setAmount(1);
-            String display = "&f" + pretty(stored.getType()) + (amount > 1 ? " x" + amount : "");
-            rewards.add(new RewardDefinition(draftReward.id, RewardType.ITEM, draftReward.rarityId, roundChance(draftReward.chance),
-                    display, stored.getType(), amount, "", false, stored, ""));
+            String display = stored.hasItemMeta() && stored.getItemMeta().hasDisplayName()
+                    ? "&fReward Item"
+                    : "&f" + pretty(stored.getType()) + (amount > 1 ? " x" + amount : "");
+            rewards.add(new RewardDefinition(draftReward.id, RewardType.ITEM, draftReward.rarityId,
+                    roundChance(draftReward.chance), display, stored.getType(), amount, "", false, stored, ""));
         }
 
         String crateId = draft.existingId;
@@ -362,6 +419,10 @@ public final class CrateEditorService {
         ItemMeta meta = item.getItemMeta();
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
         lore.add(Component.empty());
+        if (reward.type == RewardType.COMMAND) {
+            lore.add(line("&7Type: &dConsole Command"));
+            lore.add(line("&7Command: &f/" + reward.data));
+        }
         lore.add(line(String.format(Locale.ROOT, "&7Chance: &f%.2f%%", reward.chance)));
         definitions.rarity(reward.rarityId).ifPresent(rarity ->
                 lore.add(line("&7Rarity: " + rarity.displayName())));
@@ -420,13 +481,13 @@ public final class CrateEditorService {
         return Math.round(value * 100.0D) / 100.0D;
     }
 
-    private static String nextRewardId(Draft draft) {
+    private static String nextRewardId(Draft draft, String prefix) {
         int next = 1;
         Set<String> existing = new HashSet<>();
         draft.rewards.forEach(reward -> existing.add(reward.id));
         draft.preservedRewards.forEach(reward -> existing.add(reward.id()));
-        while (existing.contains("item_" + next)) next++;
-        return "item_" + next;
+        while (existing.contains(prefix + "_" + next)) next++;
+        return prefix + "_" + next;
     }
 
     private static boolean containsLegacyColour(String input) {
@@ -473,16 +534,36 @@ public final class CrateEditorService {
     }
 
     private static final class DraftReward {
+        private final RewardType type;
         private final ItemStack item;
         private double chance;
         private final String id;
         private String rarityId;
+        private final String displayName;
+        private final String data;
 
-        private DraftReward(ItemStack item, double chance, String id, String rarityId) {
+        private DraftReward(RewardType type, ItemStack item, double chance, String id, String rarityId,
+                            String displayName, String data) {
+            this.type = type;
             this.item = item.clone();
             this.chance = roundChance(chance);
             this.id = id;
             this.rarityId = rarityId == null || rarityId.isBlank() ? "common" : rarityId;
+            this.displayName = displayName == null || displayName.isBlank() ? "&fReward" : displayName;
+            this.data = data == null ? "" : data;
+        }
+
+        private static DraftReward item(ItemStack item, double chance, String id, String rarityId) {
+            return new DraftReward(RewardType.ITEM, item, chance, id, rarityId, "&fReward Item", "");
+        }
+
+        private static DraftReward command(String displayName, String command, Material icon,
+                                           double chance, String id, String rarityId) {
+            ItemStack display = new ItemStack(icon == null ? Material.COMMAND_BLOCK : icon);
+            ItemMeta meta = display.getItemMeta();
+            meta.displayName(Component.text("Command Reward").decoration(TextDecoration.ITALIC, false));
+            display.setItemMeta(meta);
+            return new DraftReward(RewardType.COMMAND, display, chance, id, rarityId, displayName, command);
         }
     }
 }
