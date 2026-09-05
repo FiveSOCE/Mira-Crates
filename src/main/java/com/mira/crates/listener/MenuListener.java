@@ -79,7 +79,8 @@ public final class MenuListener implements Listener {
         Player player = event.getPlayer();
         boolean nameInput = crateEditor.isAwaitingName(player.getUniqueId());
         boolean commandInput = crateEditor.isAwaitingCommand(player.getUniqueId());
-        if (!nameInput && !commandInput) return;
+        boolean commandNameInput = crateEditor.isAwaitingCommandName(player.getUniqueId());
+        if (!nameInput && !commandInput && !commandNameInput) return;
 
         event.setCancelled(true);
         event.getRecipients().clear();
@@ -87,7 +88,8 @@ public final class MenuListener implements Listener {
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!player.isOnline()) return;
-            if (commandInput) crateEditor.submitChatCommand(player, input);
+            if (commandNameInput) crateEditor.submitChatCommandName(player, input);
+            else if (commandInput) crateEditor.submitChatCommand(player, input);
             else crateEditor.submitChatName(player, input);
         });
     }
