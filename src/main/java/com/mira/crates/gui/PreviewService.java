@@ -10,7 +10,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
-import java.util.Comparator;
 import java.util.List;
 
 public final class PreviewService {
@@ -29,8 +28,8 @@ public final class PreviewService {
         CrateDefinition crate = definitions.crate(crateId).orElse(null);
         if (crate == null) return false;
         List<RewardDefinition> visible = crate.rewards().stream()
-                .filter(reward -> reward.permission() == null || reward.permission().isBlank() || player.hasPermission(reward.permission()))
-                .sorted(Comparator.comparing(RewardDefinition::rarityId).thenComparing(RewardDefinition::id))
+                .filter(reward -> reward.permission() == null || reward.permission().isBlank()
+                        || player.hasPermission(reward.permission()))
                 .toList();
         int maxPage = Math.max(0, (visible.size() - 1) / PAGE_SIZE);
         int page = Math.max(0, Math.min(maxPage, requestedPage));
