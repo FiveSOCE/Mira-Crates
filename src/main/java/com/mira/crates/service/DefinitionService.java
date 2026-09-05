@@ -109,7 +109,7 @@ public final class DefinitionService {
         }
 
         crates.put(normalized, new CrateDefinition(normalized, displayName, shulkerMaterial,
-                List.of(companionKeyId), 0L, rewards));
+                List.of(companionKeyId), 0L, 1, rewards));
         saveCrates();
         return true;
     }
@@ -123,7 +123,7 @@ public final class DefinitionService {
                 ? List.of(ensureCompanionKey(existing.id(), displayName))
                 : existing.keyIds();
         crates.put(normalized, new CrateDefinition(existing.id(), displayName, shulkerMaterial, keyIds,
-                existing.cooldownSeconds(), rewards));
+                existing.cooldownSeconds(), existing.winsPerOpen(), rewards));
         saveCrates();
         return true;
     }
@@ -157,7 +157,7 @@ public final class DefinitionService {
             List<String> updated = new ArrayList<>(crate.keyIds());
             updated.remove(normalized);
             crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), updated,
-                    crate.cooldownSeconds(), crate.rewards()));
+                    crate.cooldownSeconds(), crate.winsPerOpen(), crate.rewards()));
         }
         saveKeys();
         saveCrates();
@@ -186,7 +186,7 @@ public final class DefinitionService {
         List<String> updated = new ArrayList<>(crate.keyIds());
         if (!updated.contains(normalizedKey)) updated.add(normalizedKey);
         crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), updated,
-                crate.cooldownSeconds(), crate.rewards()));
+                crate.cooldownSeconds(), crate.winsPerOpen(), crate.rewards()));
         saveCrates();
         return true;
     }
@@ -198,7 +198,7 @@ public final class DefinitionService {
         if (!updated.remove(Ids.normalize(keyId))) return false;
         if (updated.isEmpty()) updated.add(ensureCompanionKey(crate.id(), crate.displayName()));
         crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), updated,
-                crate.cooldownSeconds(), crate.rewards()));
+                crate.cooldownSeconds(), crate.winsPerOpen(), crate.rewards()));
         saveCrates();
         return true;
     }
@@ -230,7 +230,7 @@ public final class DefinitionService {
         CrateDefinition crate = crates.get(Ids.normalize(crateId));
         if (crate == null || seconds < 0L) return false;
         crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), crate.keyIds(),
-                seconds, crate.rewards()));
+                seconds, crate.winsPerOpen(), crate.rewards()));
         saveCrates();
         return true;
     }
@@ -275,6 +275,7 @@ public final class DefinitionService {
             Material icon = ShulkerMaterials.normalise(material(yaml.getString(path + ".icon"), Material.PURPLE_SHULKER_BOX));
             List<String> keyIds = yaml.getStringList(path + ".keys").stream().map(Ids::normalize).toList();
             long cooldown = Math.max(0L, yaml.getLong(path + ".cooldown-seconds", 0L));
+            int winsPerOpen = Math.max(1, Math.min(5, yaml.getInt(path + ".wins-per-open", 1)));
             List<RewardDefinition> rewards = new ArrayList<>();
             ConfigurationSection rewardRoot = yaml.getConfigurationSection(path + ".rewards");
             if (rewardRoot != null) {
@@ -301,7 +302,7 @@ public final class DefinitionService {
                             permission, broadcast, item, data));
                 }
             }
-            crates.put(id, new CrateDefinition(id, name, icon, keyIds, cooldown, rewards));
+            crates.put(id, new CrateDefinition(id, name, icon, keyIds, cooldown, winsPerOpen, rewards));
         }
     }
 
@@ -313,7 +314,7 @@ public final class DefinitionService {
             if (!validKeys.isEmpty()) {
                 if (!validKeys.equals(crate.keyIds())) {
                     crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), validKeys,
-                            crate.cooldownSeconds(), crate.rewards()));
+                            crate.cooldownSeconds(), crate.winsPerOpen(), crate.rewards()));
                     cratesChanged = true;
                 }
                 continue;
@@ -326,7 +327,7 @@ public final class DefinitionService {
                 keysChanged = true;
             }
             crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), List.of(keyId),
-                    crate.cooldownSeconds(), crate.rewards()));
+                    crate.cooldownSeconds(), crate.winsPerOpen(), crate.rewards()));
             cratesChanged = true;
         }
         if (keysChanged) saveKeys();
@@ -366,6 +367,7 @@ public final class DefinitionService {
             yaml.set(path + ".icon", ShulkerMaterials.normalise(crate.icon()).name());
             yaml.set(path + ".keys", crate.keyIds());
             yaml.set(path + ".cooldown-seconds", crate.cooldownSeconds());
+            yaml.set(path + ".wins-per-open", crate.winsPerOpen());
             for (RewardDefinition reward : crate.rewards()) {
                 String rewardPath = path + ".rewards." + reward.id();
                 yaml.set(rewardPath + ".type", reward.type().name());
