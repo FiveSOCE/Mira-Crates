@@ -75,7 +75,7 @@ public final class OpeningService {
 
         if (quickOpen) return complete(player, crate, roll, keyUsed);
 
-        CosmeticsBridge.play(player, "crate_open", player.getLocation());
+        CosmeticsBridge.playVisualOnly(player, "crate_open", player.getLocation());
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.OPENING, crate.id(), 0);
         Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse(crate.displayName() + " &8Opening"));
         holder.bind(inventory);
@@ -126,6 +126,7 @@ public final class OpeningService {
                 }
 
                 renderReel(session, reel, position);
+                CosmeticsBridge.play(session.player, "crate_spin_tick", session.player.getLocation());
                 if (position >= steps) {
                     cancel();
                     session.task = null;
