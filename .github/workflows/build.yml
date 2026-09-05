@@ -35,19 +35,19 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.8
-          path: build/libs/MiraCrates-0.3.8.jar
+          name: MiraCrates-0.3.9
+          path: build/libs/MiraCrates-0.3.9.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.8 release if missing
+      - name: Publish v0.3.9 release if missing
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.3.8 >/dev/null 2>&1; then
-            gh release create v0.3.8 \
-              build/libs/MiraCrates-0.3.8.jar \
+          if ! gh release view v0.3.9 >/dev/null 2>&1; then
+            gh release create v0.3.9 \
+              build/libs/MiraCrates-0.3.9.jar \
               --target "${{ github.sha }}" \
-              --title "MiraCrates v0.3.8" \
-              --notes "Adds a faster CS2-style horizontal crate slider, per-reward Shift-left rarity editing with persistent Common/Rare/Legendary/Mythic presentation categories, metadata-faithful reward previews with always-visible exact chance percentages and hidden rarity labels, and makes explicit reward chance the sole probability authority."
+              --title "MiraCrates v0.3.9" \
+              --notes "Final crate UX polish: faster CS2-style horizontal slider opening, Shift-left per-reward rarity selection with persistent Common/Rare/Legendary/Mythic categories, exact chance-authoritative rolls, metadata-faithful previews with chance always visible and rarity hidden, plus preview order independent of rarity."
           fi
