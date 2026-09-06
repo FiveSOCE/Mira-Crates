@@ -16,7 +16,7 @@ val miraCoreVersion = "0.4.1"
 val miraCoreSha256 = "4a20f538762bb550b4f8c359eb16945eee786ed0741ba60c0dbfc7e07e2249a9"
 val miraCoreJar = layout.projectDirectory.file("libs/MiraCore-$miraCoreVersion.jar").asFile
 val miraSpawnersVersion = "0.1.9"
-val miraSpawnersSha256 = "47a65e6eb8fad6ed7886eaf156d16f21e20af7fc3cb6ef955f1cb87eda001a5f"
+val miraSpawnersSha256 = "13850d0678a9a0b8511aa6047f520dcda42312edfabc029db85c9fb82ffbb4bc"
 val miraSpawnersJar = layout.projectDirectory.file("libs/MiraSpawners-$miraSpawnersVersion.jar").asFile
 
 fun sha256(file: File): String {
@@ -58,3 +58,10 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.test { useJUnitPlatform() }
 
 tasks.jar { archiveFileName.set("MiraCrates-${project.version}.jar") }
+
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand("version" to project.version)
+    }
+}
