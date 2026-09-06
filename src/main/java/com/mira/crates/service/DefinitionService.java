@@ -109,7 +109,7 @@ public final class DefinitionService {
         String companionKeyId = companionKeyId(normalized);
         if (!keys.containsKey(companionKeyId)) {
             keys.put(companionKeyId, new KeyDefinition(companionKeyId, companionKeyName(displayName),
-                    Material.TRIPWIRE_HOOK, false, List.of()));
+                    Material.TRIPWIRE_HOOK, false, companionKeyLore(displayName)));
             saveKeys();
         }
 
@@ -322,6 +322,18 @@ public final class DefinitionService {
         boolean keysChanged = false;
         boolean cratesChanged = false;
         for (CrateDefinition crate : new ArrayList<>(crates.values())) {
+            String companionId = companionKeyId(crate.id());
+            KeyDefinition companion = keys.get(companionId);
+            if (companion != null) {
+                String expectedName = companionKeyName(crate.displayName());
+                List<String> expectedLore = companionKeyLore(crate.displayName());
+                if (!expectedName.equals(companion.displayName()) || companion.lore().isEmpty()) {
+                    keys.put(companionId, new KeyDefinition(companion.id(), expectedName, companion.material(),
+                            companion.virtual(), companion.lore().isEmpty() ? expectedLore : companion.lore()));
+                    keysChanged = true;
+                }
+            }
+
             List<String> validKeys = crate.keyIds().stream().filter(keys::containsKey).distinct().toList();
             if (!validKeys.isEmpty()) {
                 if (!validKeys.equals(crate.keyIds())) {
@@ -335,7 +347,7 @@ public final class DefinitionService {
             String keyId = companionKeyId(crate.id());
             if (!keys.containsKey(keyId)) {
                 keys.put(keyId, new KeyDefinition(keyId, companionKeyName(crate.displayName()), Material.TRIPWIRE_HOOK,
-                        false, List.of()));
+                        false, companionKeyLore(crate.displayName())));
                 keysChanged = true;
             }
             crates.put(crate.id(), new CrateDefinition(crate.id(), crate.displayName(), crate.icon(), List.of(keyId),
@@ -350,7 +362,7 @@ public final class DefinitionService {
         String keyId = companionKeyId(crateId);
         if (!keys.containsKey(keyId)) {
             keys.put(keyId, new KeyDefinition(keyId, companionKeyName(displayName), Material.TRIPWIRE_HOOK,
-                    false, List.of()));
+                    false, companionKeyLore(displayName)));
             saveKeys();
         }
         return keyId;
@@ -366,9 +378,16 @@ public final class DefinitionService {
 
     private static String companionKeyName(String crateDisplayName) {
         String name = crateDisplayName == null ? "" : crateDisplayName.trim();
-        name = name.replaceFirst("(?i)\\s*crate\\s*$", "").trim();
         if (name.isBlank()) name = "&fCrate";
         return name + " Key";
+    }
+
+    private static List<String> companionKeyLore(String crateDisplayName) {
+        String name = crateDisplayName == null || crateDisplayName.isBlank() ? "&fCrate" : crateDisplayName.trim();
+        return List.of(
+                "&7Key for " + name + "&7.",
+                "&8Right-click the matching crate to use."
+        );
     }
 
     private void saveCrates() {
