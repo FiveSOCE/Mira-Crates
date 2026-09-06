@@ -46,11 +46,22 @@ public final class CrateHologramService {
             return;
         }
 
-        for (CrateLocation crateLocation : locations.all()) {
+        java.util.List<Block> stale = new java.util.ArrayList<>();
+        for (CrateLocation crateLocation : new java.util.ArrayList<>(locations.all())) {
             World world = Bukkit.getWorld(crateLocation.world());
             if (world == null) continue;
-            create(world.getBlockAt(crateLocation.x(), crateLocation.y(), crateLocation.z()), crateLocation.crateId());
+
+            Block block = world.getBlockAt(crateLocation.x(), crateLocation.y(), crateLocation.z());
+            boolean validBlock = block.getState() instanceof org.bukkit.block.ShulkerBox;
+            boolean validDefinition = definitions.crate(crateLocation.crateId()).isPresent();
+            if (!validBlock || !validDefinition) {
+                stale.add(block);
+                continue;
+            }
+            create(block, crateLocation.crateId());
         }
+
+        for (Block block : stale) locations.remove(block);
     }
 
     public void create(Block block, String crateId) {
