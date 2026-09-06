@@ -2,7 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'release/**'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -28,6 +30,14 @@ jobs:
         with:
           gradle-version: '8.10'
 
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' build.gradle.kts | head -n1)
+          test -n "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Test and build
         run: gradle clean test build --stacktrace
 
@@ -35,19 +45,21 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.13
-          path: build/libs/MiraCrates-0.3.13.jar
+          name: MiraCrates-${{ steps.version.outputs.version }}
+          path: build/libs/MiraCrates-${{ steps.version.outputs.version }}.jar
           if-no-files-found: error
 
-      - name: Publish v0.3.13 release if missing
-        if: github.event_name != 'pull_request'
+      - name: Publish release branch
+        if: success() && startsWith(github.ref, 'refs/heads/release/')
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if ! gh release view v0.3.13 >/dev/null 2>&1; then
-            gh release create v0.3.13 \
-              build/libs/MiraCrates-0.3.13.jar \
+          TAG="v$VERSION"
+          JAR="build/libs/MiraCrates-$VERSION.jar"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" "$JAR" \
               --target "${{ github.sha }}" \
-              --title "MiraCrates v0.3.13" \
-              --notes "Adds per-crate 1-5 sequential reward rolls in the CS2-style opening GUI, keeps the GUI open through every roll, shows roll progress, and auto-closes three seconds after the final reward. Also routes spin ticks through the explicit Cosmetics audio bridge."
+              --title "MiraCrates $TAG" \
+              --notes "Improves physical crate keys with crate-matching names and lore, makes /mcrates remove delete its hologram immediately, and reconciles holograms on startup/reload by removing all MiraCrates labels first and recreating them only for valid saved crate blocks."
           fi
