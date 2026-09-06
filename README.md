@@ -1,10 +1,17 @@
+## v0.3.14 key and hologram fixes
+
+- Companion crate keys now use the crate display name plus ` Key` and receive distinguishing lore.
+- `/mcrates remove` removes the crate hologram immediately.
+- Startup/reload removes MiraCrates-owned holograms first, then recreates labels only for saved locations that still contain a valid crate block.
+- Stale saved crate locations without a valid crate block are removed during hologram reconciliation.
+
 # MiraCrates
 
 MiraCrates is the crate, key and reward engine for the Mira Paper server suite. It provides deployable physical crates, configurable reward pools and chances, player previews, keyed openings, admin editing tools, opening history and optional holograms.
 
 ## Download
 
-[**Download MiraCrates v0.3.13**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.13/MiraCrates-0.3.13.jar)
+[**Download MiraCrates v0.3.14**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.14/MiraCrates-0.3.14.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
