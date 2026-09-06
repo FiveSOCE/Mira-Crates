@@ -64,7 +64,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
         getServer().getPluginManager().registerEvents(new AdminCrateChangeListener(this, core, definitions, locations, crateItems, holograms), this);
 
-        MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, rewards, openings, previews, editor, crateItems, locations);
+        MiraCratesCommand command = new MiraCratesCommand(this, core, definitions, keys, rewards, openings, previews, editor, crateItems, locations, holograms);
         PluginCommand pluginCommand = getCommand("miracrates");
         if (pluginCommand == null) {
             core.modules().setHealth(this, ModuleHealth.UNHEALTHY, "miracrates command missing from plugin.yml");
