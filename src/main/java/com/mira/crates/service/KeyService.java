@@ -39,9 +39,10 @@ public final class KeyService {
         ItemStack item = new ItemStack(key.material(), Math.min(64, amount));
         ItemMeta meta = item.getItemMeta();
         meta.displayName(core.messages().parse(key.displayName()).decoration(TextDecoration.ITALIC, false));
-        if (!key.lore().isEmpty()) {
+        List<String> loreLines = key.lore().isEmpty() ? defaultLore(key.id()) : key.lore();
+        if (!loreLines.isEmpty()) {
             List<Component> lore = new ArrayList<>();
-            for (String line : key.lore()) lore.add(core.messages().parse(line).decoration(TextDecoration.ITALIC, false));
+            for (String line : loreLines) lore.add(core.messages().parse(line).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
         }
         meta.getPersistentDataContainer().set(keyIdKey, PersistentDataType.STRING, key.id());
@@ -108,6 +109,16 @@ public final class KeyService {
             if (key != null) return key.displayName();
         }
         return "&fcrate key";
+    }
+
+    private List<String> defaultLore(String keyId) {
+        return definitions.crates().stream()
+                .filter(crate -> crate.keyIds().stream().map(Ids::normalize).anyMatch(Ids.normalize(keyId)::equals))
+                .findFirst()
+                .map(crate -> List.of(
+                        "&7Key for " + crate.displayName() + "&7.",
+                        "&8Right-click the matching crate to use."))
+                .orElse(List.of("&7MiraCrates key.", "&8Use on its matching crate."));
     }
 
     private boolean consumePhysical(Player player, String keyId) {
