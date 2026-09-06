@@ -30,10 +30,12 @@ public final class MiraCratesCommand implements TabExecutor {
     private final EditorMenuService editor;
     private final CrateItemService crateItems;
     private final CrateLocationService locations;
+    private final CrateHologramService holograms;
 
     public MiraCratesCommand(MiraCratesPlugin plugin, MiraCore core, DefinitionService definitions, KeyService keys,
                              RewardEngine rewards, OpeningService openings, PreviewService previews,
-                             EditorMenuService editor, CrateItemService crateItems, CrateLocationService locations) {
+                             EditorMenuService editor, CrateItemService crateItems, CrateLocationService locations,
+                             CrateHologramService holograms) {
         this.plugin = plugin;
         this.core = core;
         this.definitions = definitions;
@@ -44,6 +46,7 @@ public final class MiraCratesCommand implements TabExecutor {
         this.editor = editor;
         this.crateItems = crateItems;
         this.locations = locations;
+        this.holograms = holograms;
     }
 
     @Override
@@ -126,6 +129,7 @@ public final class MiraCratesCommand implements TabExecutor {
     }
 
     shulkerBox.getInventory().clear();
+    holograms.remove(target);
     locations.remove(target);
     target.setType(Material.AIR, false);
     core.messages().send(sender, "&aRemoved placed crate &f" + crateId.get() + "&a. The crate definition was not deleted.");
