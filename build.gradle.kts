@@ -4,7 +4,7 @@ import java.security.MessageDigest
 plugins { java }
 
 group = "com.mira"
-version = "0.3.13"
+version = "0.3.14"
 
 repositories {
     mavenCentral()
@@ -12,10 +12,10 @@ repositories {
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
 
-val miraCoreVersion = "0.2.0"
-val miraCoreSha256 = "66433a266a76088d2a2de90ac1beb1a5a183c26891ee8f394827b47830195b03"
+val miraCoreVersion = "0.4.1"
+val miraCoreSha256 = "4a20f538762bb550b4f8c359eb16945eee786ed0741ba60c0dbfc7e07e2249a9"
 val miraCoreJar = layout.projectDirectory.file("libs/MiraCore-$miraCoreVersion.jar").asFile
-val miraSpawnersVersion = "0.1.8"
+val miraSpawnersVersion = "0.1.9"
 val miraSpawnersSha256 = "47a65e6eb8fad6ed7886eaf156d16f21e20af7fc3cb6ef955f1cb87eda001a5f"
 val miraSpawnersJar = layout.projectDirectory.file("libs/MiraSpawners-$miraSpawnersVersion.jar").asFile
 
