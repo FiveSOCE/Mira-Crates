@@ -4,7 +4,7 @@ import java.security.MessageDigest
 plugins { java }
 
 group = "com.mira"
-version = "0.3.14"
+version = "0.3.15"
 
 repositories {
     mavenCentral()
@@ -38,8 +38,11 @@ val downloadMiraDependencies by tasks.registering {
     }
 }
 
+val paperApiVersion = providers.gradleProperty("paperApiVersion").orElse("1.21.11-R0.1-SNAPSHOT")
+val compileJavaVersion = providers.gradleProperty("compileJavaVersion").map(String::toInt).orElse(21)
+
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
     compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly(files(miraCoreJar))
     compileOnly(files(miraSpawnersJar))
@@ -47,7 +50,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
-java { toolchain.languageVersion.set(JavaLanguageVersion.of(21)) }
+java { toolchain.languageVersion.set(JavaLanguageVersion.of(compileJavaVersion.get())) }
 
 tasks.withType<JavaCompile>().configureEach {
     dependsOn(downloadMiraDependencies)
