@@ -11,7 +11,7 @@ MiraCrates is the crate, key and reward engine for the Mira Paper server suite. 
 
 ## Download
 
-[**Download MiraCrates v0.3.14**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.14/MiraCrates-0.3.14.jar)
+[**Download MiraCrates v0.3.14**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.15/MiraCrates-0.3.15.jar)
 
 [View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
