@@ -1,3 +1,13 @@
+# MiraCrates
+
+## Download
+
+**Latest compatibility release: v0.3.15**
+
+[**Download MiraCrates-0.3.15.jar**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.15/MiraCrates-0.3.15.jar)
+
+[View all releases](https://github.com/FiveSOCE/Mira-Crates/releases)
+
 ## v0.3.14 key and hologram fixes
 
 - Companion crate keys now use the crate display name plus ` Key` and receive distinguishing lore.
@@ -8,12 +18,6 @@
 # MiraCrates
 
 MiraCrates is the crate, key and reward engine for the Mira Paper server suite. It provides deployable physical crates, configurable reward pools and chances, player previews, keyed openings, admin editing tools, opening history and optional holograms.
-
-## Download
-
-[**Download MiraCrates v0.3.14**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.15/MiraCrates-0.3.15.jar)
-
-[View All Releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
 ## Requirements / Dependencies
 
