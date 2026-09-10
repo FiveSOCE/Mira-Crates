@@ -56,18 +56,18 @@ jobs:
         run: gradle clean test build -PpaperApiVersion=1.21.11-R0.1-SNAPSHOT -PcompileJavaVersion=21 -PbytecodeJavaVersion=21 --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: MiraCrates-0.3.15
-          path: build/libs/MiraCrates-0.3.15.jar
+          name: MiraCrates-0.3.16
+          path: build/libs/MiraCrates-0.3.16.jar
           if-no-files-found: error
       - name: Publish release
         if: success() && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.3.15"
-          JAR="build/libs/MiraCrates-0.3.15.jar"
+          TAG="v0.3.16"
+          JAR="build/libs/MiraCrates-0.3.16.jar"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$JAR" --clobber
           else
-            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraCrates v0.3.15" --notes "Compatibility release: one JAR supporting Paper/Minecraft 1.21.11 through 26.2. CI verifies both API endpoints; production bytecode remains Java 21 compatible."
+            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraCrates v0.3.16" --notes "Adds per-crate Choice opening mode. Admins can toggle Random/Choice from Manage with Shift-right-click. Choice crates present eligible rewards in a selection GUI, support 1-5 unique choices using Wins Per Open, hide/ignore reward chances, and consume the key only when choices are confirmed."
           fi

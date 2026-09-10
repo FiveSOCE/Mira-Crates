@@ -3,9 +3,11 @@ package com.mira.crates.listener;
 import com.mira.core.api.MiraCore;
 import com.mira.crates.gui.PreviewService;
 import com.mira.crates.model.CrateLocation;
+import com.mira.crates.service.ChoiceOpeningService;
 import com.mira.crates.service.CrateHologramService;
 import com.mira.crates.service.CrateItemService;
 import com.mira.crates.service.CrateLocationService;
+import com.mira.crates.service.CrateModeService;
 import com.mira.crates.service.OpeningService;
 import org.bukkit.block.Block;
 import org.bukkit.block.ShulkerBox;
@@ -31,11 +33,14 @@ public final class CrateListener implements Listener {
     private final CrateHologramService holograms;
     private final PreviewService previews;
     private final OpeningService openings;
+    private final ChoiceOpeningService choices;
+    private final CrateModeService modes;
     private final boolean previewLeft;
     private final boolean openRight;
 
     public CrateListener(MiraCore core, CrateLocationService locations, CrateItemService crateItems,
                          CrateHologramService holograms, PreviewService previews, OpeningService openings,
+                         ChoiceOpeningService choices, CrateModeService modes,
                          boolean previewLeft, boolean openRight) {
         this.core = core;
         this.locations = locations;
@@ -43,6 +48,8 @@ public final class CrateListener implements Listener {
         this.holograms = holograms;
         this.previews = previews;
         this.openings = openings;
+        this.choices = choices;
+        this.modes = modes;
         this.previewLeft = previewLeft;
         this.openRight = openRight;
     }
@@ -71,8 +78,12 @@ public final class CrateListener implements Listener {
             previews.open(event.getPlayer(), crateId.get(), 0);
         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK && openRight) {
             event.setCancelled(true);
-            boolean quickOpen = event.getPlayer().isSneaking();
-            openings.attemptPhysicalOpen(event.getPlayer(), crateId.get(), quickOpen);
+            if (modes.isChoice(crateId.get())) {
+                choices.attemptPhysicalOpen(event.getPlayer(), crateId.get());
+            } else {
+                boolean quickOpen = event.getPlayer().isSneaking();
+                openings.attemptPhysicalOpen(event.getPlayer(), crateId.get(), quickOpen);
+            }
         }
     }
 

@@ -26,6 +26,8 @@ public final class MiraCratesPlugin extends JavaPlugin {
     private RewardEngine rewards;
     private HistoryService history;
     private OpeningService openings;
+    private ChoiceOpeningService choiceOpenings;
+    private CrateModeService modes;
     private PreviewService previews;
     private CrateItemService crateItems;
     private CrateEditorService crateEditor;
@@ -48,18 +50,22 @@ public final class MiraCratesPlugin extends JavaPlugin {
         history = new HistoryService(this);
         jackpots = new JackpotService(this);
         seasons = new SeasonalCrateService(this);
-        previews = new PreviewService(core, definitions, rewards);
+        modes = new CrateModeService(this);
+        previews = new PreviewService(core, definitions, rewards, modes);
         openings = new OpeningService(this, core, definitions, keys, rewards, playerData, history, jackpots, seasons);
+        choiceOpenings = new ChoiceOpeningService(this, core, definitions, keys, rewards, playerData, history, jackpots, seasons);
         crateItems = new CrateItemService(this, core, definitions);
         crateEditor = new CrateEditorService(core, definitions, crateItems);
-        editor = new EditorMenuService(core, definitions, locations, previews, crateEditor, crateItems, keys);
+        editor = new EditorMenuService(core, definitions, locations, previews, crateEditor, crateItems, keys, modes);
         api = new MiraCratesApiImpl(definitions, keys, openings);
 
         core.modules().register(this, "MiraCrates");
         core.services().register(MiraCratesApi.class, api);
 
         getServer().getPluginManager().registerEvents(new MenuListener(this, editor, crateEditor, previews), this);
+        getServer().getPluginManager().registerEvents(choiceOpenings, this);
         getServer().getPluginManager().registerEvents(new CrateListener(core, locations, crateItems, holograms, previews, openings,
+                choiceOpenings, modes,
                 getConfig().getBoolean("interaction.preview-on-left-click", true),
                 getConfig().getBoolean("interaction.open-on-right-click", true)), this);
         getServer().getPluginManager().registerEvents(new AdminCrateChangeListener(this, core, definitions, locations, crateItems, holograms), this);
@@ -77,13 +83,14 @@ public final class MiraCratesPlugin extends JavaPlugin {
         getServer().getScheduler().runTask(this, holograms::syncAll);
 
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
-                "Crates, rare-win broadcasts, jackpot data and seasonal windows ready");
+                "Random/multi-win crates, choose-your-reward crates, rare-win broadcasts, jackpot data and seasonal windows ready");
         getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with " + definitions.crates().size() + " crate definitions.");
     }
 
     @Override
     public void onDisable() {
         if (holograms != null) holograms.shutdown();
+        if (choiceOpenings != null) choiceOpenings.shutdown();
         if (openings != null) openings.shutdown();
         if (playerData != null) playerData.save();
         if (core != null) {
@@ -96,6 +103,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
         reloadConfig();
         migrateConfiguration();
         definitions.reload();
+        if (modes != null) modes.reload();
         locations.reload();
         playerData.reload();
         if (holograms != null) getServer().getScheduler().runTask(this, holograms::syncAll);

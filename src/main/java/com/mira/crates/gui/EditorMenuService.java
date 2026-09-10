@@ -2,9 +2,11 @@ package com.mira.crates.gui;
 
 import com.mira.core.api.MiraCore;
 import com.mira.crates.model.CrateDefinition;
+import com.mira.crates.model.CrateOpeningMode;
 import com.mira.crates.model.KeyDefinition;
 import com.mira.crates.service.CrateItemService;
 import com.mira.crates.service.CrateLocationService;
+import com.mira.crates.service.CrateModeService;
 import com.mira.crates.service.DefinitionService;
 import com.mira.crates.service.KeyService;
 import org.bukkit.Bukkit;
@@ -25,10 +27,11 @@ public final class EditorMenuService {
     private final CrateEditorService crateEditor;
     private final CrateItemService crateItems;
     private final KeyService keys;
+    private final CrateModeService modes;
 
     public EditorMenuService(MiraCore core, DefinitionService definitions, CrateLocationService locations,
                              PreviewService previews, CrateEditorService crateEditor, CrateItemService crateItems,
-                             KeyService keys) {
+                             KeyService keys, CrateModeService modes) {
         this.core = core;
         this.definitions = definitions;
         this.locations = locations;
@@ -36,6 +39,7 @@ public final class EditorMenuService {
         this.crateEditor = crateEditor;
         this.crateItems = crateItems;
         this.keys = keys;
+        this.modes = modes;
     }
 
     public void openMain(Player player) {
@@ -51,7 +55,7 @@ public final class EditorMenuService {
                 core.messages().parse("&7Configure its name, colour, rewards and chances."))));
         inventory.setItem(13, GuiItems.item(Material.PURPLE_SHULKER_BOX, core.messages().parse("&dManage"), List.of(
                 core.messages().parse("&7Crates: &f" + definitions.crates().size()),
-                core.messages().parse("&7Edit, preview or receive existing crates."))));
+                core.messages().parse("&7Edit, preview, choose opening mode or receive crates."))));
         inventory.setItem(15, GuiItems.item(Material.TRIPWIRE_HOOK, core.messages().parse("&eKeys"), List.of(
                 core.messages().parse("&7Definitions: &f" + definitions.keys().size()),
                 core.messages().parse("&7Browse and receive keys."))));
@@ -94,13 +98,20 @@ public final class EditorMenuService {
         int start = page * PAGE_SIZE;
         for (int slot = 0; slot < PAGE_SIZE && start + slot < values.size(); slot++) {
             CrateDefinition crate = values.get(start + slot);
+            CrateOpeningMode mode = modes.mode(crate.id());
+            String modeName = mode == CrateOpeningMode.CHOICE ? "&aChoice" : "&dRandom";
             inventory.setItem(slot, GuiItems.item(crate.icon(), core.messages().parse(crate.displayName()), List.of(
                     core.messages().parse("&7ID: &f" + crate.id()),
                     core.messages().parse("&7Rewards: &f" + crate.rewards().size()),
                     core.messages().parse("&7Keys: &f" + crate.keyIds().size()),
                     core.messages().parse("&7Placed: &f" + locations.countForCrate(crate.id())),
+                    core.messages().parse("&7Opening Mode: " + modeName),
+                    core.messages().parse(mode == CrateOpeningMode.CHOICE
+                            ? "&7Choices per key: &f" + Math.max(1, Math.min(5, crate.winsPerOpen()))
+                            : "&7Wins per key: &f" + Math.max(1, Math.min(5, crate.winsPerOpen()))),
                     core.messages().parse("&aLeft-click: edit"),
                     core.messages().parse("&dShift-left: preview rewards"),
+                    core.messages().parse("&bShift-right: toggle Random / Choice"),
                     core.messages().parse("&eRight-click: give crate shulker"))));
         }
         nav(inventory);
@@ -136,7 +147,12 @@ public final class EditorMenuService {
         int index = holder.page() * PAGE_SIZE + rawSlot;
         if (index >= values.size()) return;
         CrateDefinition crate = values.get(index);
-        if (event.getClick().isRightClick()) {
+
+        if (event.getClick().isShiftClick() && event.getClick().isRightClick()) {
+            CrateOpeningMode mode = modes.toggle(crate.id());
+            core.messages().send(player, "&a" + crate.id() + " opening mode set to &f" + mode.name() + "&a.");
+            openCrates(player, holder.page());
+        } else if (event.getClick().isRightClick()) {
             crateItems.give(player, crate.id());
             core.messages().send(player, "&aGave you &f" + crate.id() + "&a crate.");
         } else if (event.getClick().isShiftClick()) {

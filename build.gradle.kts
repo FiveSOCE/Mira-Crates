@@ -4,7 +4,7 @@ import java.security.MessageDigest
 plugins { java }
 
 group = "com.mira"
-version = "0.3.15"
+version = "0.3.16"
 
 repositories {
     mavenCentral()
@@ -33,7 +33,7 @@ fun downloadVerified(url: String, target: File, expectedSha256: String) {
 
 val downloadMiraDependencies by tasks.registering {
     doLast {
-        downloadVerified("https://github.com/FiveSOCE/MIra-core/releases/download/v$miraCoreVersion/MiraCore-$miraCoreVersion.jar", miraCoreJar, miraCoreSha256)
+        downloadVerified("https://github.com/FiveSOCE/Mira-core/releases/download/v$miraCoreVersion/MiraCore-$miraCoreVersion.jar", miraCoreJar, miraCoreSha256)
         downloadVerified("https://github.com/FiveSOCE/Mira-Spawners/releases/download/v$miraSpawnersVersion/MiraSpawners-$miraSpawnersVersion.jar", miraSpawnersJar, miraSpawnersSha256)
     }
 }
