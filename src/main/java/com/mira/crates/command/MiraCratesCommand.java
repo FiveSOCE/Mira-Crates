@@ -8,6 +8,7 @@ import com.mira.crates.model.*;
 import com.mira.crates.service.*;
 import com.mira.crates.util.Ids;
 import com.mira.crates.util.ShulkerMaterials;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -64,6 +65,7 @@ public final class MiraCratesCommand implements TabExecutor {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "create" -> createGui(sender);
             case "givecrate" -> giveCrate(sender, args);
+            case "keyall" -> keyAll(sender, args);
             case "remove" -> removePhysicalCrate(sender);
             case "help" -> sendHelp(sender);
             case "info" -> sendInfo(sender);
@@ -108,32 +110,61 @@ public final class MiraCratesCommand implements TabExecutor {
         core.messages().send(sender, "&aGave you crate &f" + id + "&a. Place the shulker anywhere to deploy it.");
     }
 
+    private void keyAll(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            core.messages().send(sender, "&eUsage: /mcrates keyall <key type>");
+            return;
+        }
+
+        String keyId = Ids.normalize(join(args, 1));
+        KeyDefinition key = definitions.key(keyId).orElse(null);
+        if (key == null) {
+            core.messages().send(sender, "&cUnknown key: " + join(args, 1));
+            return;
+        }
+
+        Collection<? extends Player> online = Bukkit.getOnlinePlayers();
+        if (online.isEmpty()) {
+            core.messages().send(sender, "&eNo players are currently online.");
+            return;
+        }
+
+        int delivered = 0;
+        for (Player player : online) {
+            if (!keys.give(player, key.id(), 1)) continue;
+            delivered++;
+            core.messages().send(player, "&aYou received &f1x " + pretty(key.id()) + " Key&a.");
+        }
+
+        core.messages().send(sender, "&aGave &f1x " + pretty(key.id()) + " Key &ato &f" + delivered + "&a online player(s).");
+    }
+
     private void removePhysicalCrate(CommandSender sender) {
-    if (!(sender instanceof Player player)) {
-        core.messages().send(sender, "&cThis command must be run by a player.");
-        return;
-    }
+        if (!(sender instanceof Player player)) {
+            core.messages().send(sender, "&cThis command must be run by a player.");
+            return;
+        }
 
-    int distance = Math.max(1, plugin.getConfig().getInt("interaction.target-distance", 6));
-    org.bukkit.block.Block target = player.getTargetBlockExact(distance);
-    if (target == null) {
-        core.messages().send(sender, "&cLook directly at a placed MiraCrates shulker within " + distance + " blocks.");
-        return;
-    }
+        int distance = Math.max(1, plugin.getConfig().getInt("interaction.target-distance", 6));
+        org.bukkit.block.Block target = player.getTargetBlockExact(distance);
+        if (target == null) {
+            core.messages().send(sender, "&cLook directly at a placed MiraCrates shulker within " + distance + " blocks.");
+            return;
+        }
 
-    Optional<String> crateId = locations.at(target).map(CrateLocation::crateId);
-    if (crateId.isEmpty()) crateId = crateItems.crateId(target);
-    if (crateId.isEmpty() || !(target.getState() instanceof org.bukkit.block.ShulkerBox shulkerBox)) {
-        core.messages().send(sender, "&cThat block is not a placed MiraCrates crate.");
-        return;
-    }
+        Optional<String> crateId = locations.at(target).map(CrateLocation::crateId);
+        if (crateId.isEmpty()) crateId = crateItems.crateId(target);
+        if (crateId.isEmpty() || !(target.getState() instanceof org.bukkit.block.ShulkerBox shulkerBox)) {
+            core.messages().send(sender, "&cThat block is not a placed MiraCrates crate.");
+            return;
+        }
 
-    shulkerBox.getInventory().clear();
-    holograms.remove(target);
-    locations.remove(target);
-    target.setType(Material.AIR, false);
-    core.messages().send(sender, "&aRemoved placed crate &f" + crateId.get() + "&a. The crate definition was not deleted.");
-}
+        shulkerBox.getInventory().clear();
+        holograms.remove(target);
+        locations.remove(target);
+        target.setType(Material.AIR, false);
+        core.messages().send(sender, "&aRemoved placed crate &f" + crateId.get() + "&a. The crate definition was not deleted.");
+    }
 
     private void previewCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -400,6 +431,7 @@ public final class MiraCratesCommand implements TabExecutor {
         core.messages().send(sender, "&f/mcrates &7- Open the editor");
         core.messages().send(sender, "&f/mcrates create &7- Create a crate through the GUI");
         core.messages().send(sender, "&f/mcrates givecrate <crate name> &7- Give yourself its deployable shulker");
+        core.messages().send(sender, "&f/mcrates keyall <key type> &7- Give one key to every online player");
         core.messages().send(sender, "&f/mcrates remove &7- Remove the placed crate you are looking at");
         core.messages().send(sender, "&f/mcrates info|test|reload &7- Diagnostics/admin recovery");
         core.messages().send(sender, "&8Advanced key/reward commands remain available for integrations not yet exposed in the GUI.");
@@ -458,11 +490,14 @@ public final class MiraCratesCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!sender.hasPermission("miracrates.admin")) return List.of();
         if (args.length == 1) {
-            return match(args[0], List.of("create", "givecrate", "remove", "help", "info", "test", "reload", "preview", "open", "crate", "key", "rarity", "reward"));
+            return match(args[0], List.of("create", "givecrate", "keyall", "remove", "help", "info", "test", "reload", "preview", "open", "crate", "key", "rarity", "reward"));
         }
         String root = args[0].toLowerCase(Locale.ROOT);
         if ((root.equals("givecrate") || root.equals("preview") || root.equals("open")) && args.length == 2) {
             return match(args[1], definitions.crates().stream().map(CrateDefinition::id).sorted().toList());
+        }
+        if (root.equals("keyall") && args.length == 2) {
+            return match(args[1], definitions.keys().stream().map(KeyDefinition::id).sorted().toList());
         }
         if (root.equals("key") && args.length == 2) return match(args[1], List.of("create", "createvirtual", "delete", "give"));
         if (root.equals("key") && args.length == 3 && (args[1].equalsIgnoreCase("give") || args[1].equalsIgnoreCase("delete"))) {
