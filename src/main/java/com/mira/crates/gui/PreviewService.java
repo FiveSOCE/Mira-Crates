@@ -20,7 +20,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class PreviewService {
-    private static final int PAGE_SIZE = 45;
+    private static final int PAGE_SIZE = 18;
+    private static final int PREVIOUS_SLOT = 21;
+    private static final int CLOSE_SLOT = 22;
+    private static final int NEXT_SLOT = 23;
+    private static final int CHOICE_INFO_SLOT = 26;
+
     private final MiraCore core;
     private final DefinitionService definitions;
     private final RewardEngine rewards;
@@ -44,7 +49,7 @@ public final class PreviewService {
         int page = Math.max(0, Math.min(maxPage, requestedPage));
 
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.PREVIEW, crate.id(), page);
-        Inventory inventory = Bukkit.createInventory(holder, 54, core.messages().parse(crate.displayName() + " &8Rewards"));
+        Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse(crate.displayName() + " &8Rewards"));
         holder.bind(inventory);
         int start = page * PAGE_SIZE;
         for (int slot = 0; slot < PAGE_SIZE && start + slot < visible.size(); slot++) {
@@ -52,11 +57,11 @@ public final class PreviewService {
             if (modes.isChoice(crate.id())) item = asChoicePreview(item);
             inventory.setItem(slot, item);
         }
-        inventory.setItem(48, GuiItems.item(Material.ARROW, core.messages().parse("&fPrevious Page"), List.of()));
-        inventory.setItem(49, GuiItems.item(Material.BARRIER, core.messages().parse("&cClose"), List.of()));
-        inventory.setItem(50, GuiItems.item(Material.ARROW, core.messages().parse("&fNext Page"), List.of()));
+        inventory.setItem(PREVIOUS_SLOT, GuiItems.item(Material.ARROW, core.messages().parse("&fPrevious Page"), List.of()));
+        inventory.setItem(CLOSE_SLOT, GuiItems.item(Material.BARRIER, core.messages().parse("&cClose"), List.of()));
+        inventory.setItem(NEXT_SLOT, GuiItems.item(Material.ARROW, core.messages().parse("&fNext Page"), List.of()));
         if (modes.isChoice(crate.id())) {
-            inventory.setItem(53, GuiItems.item(Material.EMERALD,
+            inventory.setItem(CHOICE_INFO_SLOT, GuiItems.item(Material.EMERALD,
                     core.messages().parse("&aChoice Crate"), List.of(
                             core.messages().parse("&7You choose your reward when opening this crate."),
                             core.messages().parse("&7Chance percentages do not apply."))));
@@ -66,9 +71,9 @@ public final class PreviewService {
     }
 
     public void handleClick(Player player, MiraInventoryHolder holder, int rawSlot) {
-        if (rawSlot == 48) open(player, holder.context(), holder.page() - 1);
-        else if (rawSlot == 49) player.closeInventory();
-        else if (rawSlot == 50) open(player, holder.context(), holder.page() + 1);
+        if (rawSlot == PREVIOUS_SLOT) open(player, holder.context(), holder.page() - 1);
+        else if (rawSlot == CLOSE_SLOT) player.closeInventory();
+        else if (rawSlot == NEXT_SLOT) open(player, holder.context(), holder.page() + 1);
     }
 
     private ItemStack asChoicePreview(ItemStack item) {
