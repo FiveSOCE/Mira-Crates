@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class KeyService {
+    private static final NamespacedKey CRATE_KEY_MODEL = new NamespacedKey("mira", "crate_key");
+
     private final MiraCratesPlugin plugin;
     private final MiraCore core;
     private final DefinitionService definitions;
@@ -45,6 +47,7 @@ public final class KeyService {
             for (String line : loreLines) lore.add(core.messages().parse(line).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
         }
+        meta.setItemModel(CRATE_KEY_MODEL);
         meta.getPersistentDataContainer().set(keyIdKey, PersistentDataType.STRING, key.id());
         item.setItemMeta(meta);
         return Optional.of(item);
