@@ -5,6 +5,7 @@ import com.mira.core.api.MiraCoreProvider;
 import com.mira.core.api.ModuleHealth;
 import com.mira.crates.api.MiraCratesApi;
 import com.mira.crates.api.MiraCratesApiImpl;
+import com.mira.crates.command.CrateKeyGiveCommand;
 import com.mira.crates.command.MiraCratesCommand;
 import com.mira.crates.gui.CrateEditorService;
 import com.mira.crates.gui.EditorMenuService;
@@ -78,6 +79,15 @@ public final class MiraCratesPlugin extends JavaPlugin {
         }
         pluginCommand.setExecutor(command);
         pluginCommand.setTabCompleter(command);
+
+        CrateKeyGiveCommand keyGive = new CrateKeyGiveCommand(core, definitions, keys);
+        PluginCommand keyCommand = getCommand("mcrateskey");
+        if (keyCommand == null) {
+            core.modules().setHealth(this, ModuleHealth.UNHEALTHY, "mcrateskey command missing from plugin.yml");
+            throw new IllegalStateException("mcrateskey command missing from plugin.yml");
+        }
+        keyCommand.setExecutor(keyGive);
+        keyCommand.setTabCompleter(keyGive);
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) new CratesPlaceholderExpansion(this, jackpots).register();
         getServer().getScheduler().runTask(this, holograms::syncAll);
