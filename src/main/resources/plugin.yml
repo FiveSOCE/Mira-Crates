@@ -13,6 +13,11 @@ commands:
     usage: /miracrates [create|givecrate|remove|change|help]
     aliases: [mcrates, mcrate]
     permission: miracrates.admin
+  mcrateskey:
+    description: Give an online player a specific MiraCrates key.
+    usage: /mcrateskey <player> <key> [amount]
+    aliases: [mkeygive, mcratekey]
+    permission: miracrates.admin
 
 permissions:
   miracrates.admin:
