@@ -12,6 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -92,6 +93,13 @@ public final class MenuListener implements Listener {
             else if (commandInput) crateEditor.submitChatCommand(player, input);
             else crateEditor.submitChatName(player, input);
         });
+    }
+
+    @EventHandler
+    public void onClose(InventoryCloseEvent event) {
+        if (!(event.getInventory().getHolder() instanceof MiraInventoryHolder holder)) return;
+        if (holder.type() != MiraInventoryHolder.Type.CRATE_EDITOR) return;
+        Bukkit.getScheduler().runTask(plugin, () -> editor.syncCompanionKey(holder.context()));
     }
 
     @EventHandler
