@@ -14,7 +14,8 @@ public final class MiraInventoryHolder implements InventoryHolder {
         OPENING,
         CRATE_EDITOR,
         CRATE_NAME,
-        CRATE_CHANCE
+        CRATE_CHANCE,
+        CRATE_DELETE_CONFIRM
     }
 
     private final Type type;
