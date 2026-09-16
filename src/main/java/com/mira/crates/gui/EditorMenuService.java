@@ -70,6 +70,42 @@ public final class EditorMenuService {
         crateEditor.startCreate(player);
     }
 
+    public void syncCompanionKey(String crateId) {
+        if (crateId == null || crateId.isBlank() || "new".equalsIgnoreCase(crateId)) return;
+        CrateDefinition crate = definitions.crate(crateId).orElse(null);
+        if (crate == null) return;
+
+        String base = crate.id();
+        if (base.endsWith("_crate") && base.length() > "_crate".length()) {
+            base = base.substring(0, base.length() - "_crate".length());
+        }
+        String companionId = base + "_key";
+        if (!crate.keyIds().contains(companionId)) return;
+
+        long references = definitions.crates().stream()
+                .filter(candidate -> candidate.keyIds().contains(companionId))
+                .count();
+        if (references != 1L) return;
+
+        KeyDefinition companion = definitions.key(companionId).orElse(null);
+        if (companion == null) return;
+
+        String expectedName = crate.displayName() + " Key";
+        List<String> expectedLore = List.of(
+                "&7Key for " + crate.displayName() + "&7.",
+                "&8Right-click the matching crate to use."
+        );
+        if (expectedName.equals(companion.displayName()) && expectedLore.equals(companion.lore())) return;
+
+        if (!definitions.deleteKey(companionId)) return;
+        if (!definitions.createKey(companionId, expectedName, false)) {
+            definitions.reload();
+            return;
+        }
+        definitions.attachKey(crate.id(), companionId);
+        definitions.reload();
+    }
+
     public void handleClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
         if (!player.hasPermission("miracrates.admin")) {
             player.closeInventory();
