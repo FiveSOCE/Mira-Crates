@@ -38,7 +38,10 @@ import java.util.UUID;
 
 /** Player-facing choose-your-reward opening flow for crates configured in CHOICE mode. */
 public final class ChoiceOpeningService implements Listener {
-    private static final int REWARD_LIMIT = 45;
+    private static final int REWARDS_PER_PAGE = 45;
+    private static final int PREVIOUS_SLOT = 45;
+    private static final int PAGE_INFO_SLOT = 46;
+    private static final int NEXT_SLOT = 47;
     private final MiraCratesPlugin plugin;
     private final MiraCore core;
     private final DefinitionService definitions;
@@ -113,7 +116,6 @@ public final class ChoiceOpeningService implements Listener {
                 .filter(reward -> reward.permission() == null || reward.permission().isBlank()
                         || player.hasPermission(reward.permission()))
                 .filter(reward -> definitions.rarity(reward.rarityId()).isPresent())
-                .limit(REWARD_LIMIT)
                 .toList();
         if (eligible.isEmpty()) {
             core.messages().send(player, "&cThis crate has no eligible rewards configured.");
@@ -145,9 +147,22 @@ public final class ChoiceOpeningService implements Listener {
         int rawSlot = event.getRawSlot();
         if (rawSlot < 0 || rawSlot >= session.inventory.getSize()) return;
 
-        if (rawSlot < session.eligible.size()) {
-            RewardDefinition reward = session.eligible.get(rawSlot);
-            toggleSelection(session, reward);
+        if (rawSlot < REWARDS_PER_PAGE) {
+            int index = session.page * REWARDS_PER_PAGE + rawSlot;
+            if (index < session.eligible.size()) {
+                RewardDefinition reward = session.eligible.get(index);
+                toggleSelection(session, reward);
+                render(session);
+            }
+            return;
+        }
+        if (rawSlot == PREVIOUS_SLOT) {
+            session.page = Math.max(0, session.page - 1);
+            render(session);
+            return;
+        }
+        if (rawSlot == NEXT_SLOT) {
+            session.page = Math.min(maxPage(session), session.page + 1);
             render(session);
             return;
         }
@@ -256,10 +271,24 @@ public final class ChoiceOpeningService implements Listener {
     }
 
     private void render(ChoiceSession session) {
-        for (int slot = 0; slot < REWARD_LIMIT; slot++) session.inventory.setItem(slot, null);
-        for (int i = 0; i < session.eligible.size(); i++) {
-            RewardDefinition reward = session.eligible.get(i);
-            session.inventory.setItem(i, choiceDisplay(session, reward));
+        session.page = Math.max(0, Math.min(maxPage(session), session.page));
+        for (int slot = 0; slot < 48; slot++) session.inventory.setItem(slot, null);
+        int start = session.page * REWARDS_PER_PAGE;
+        for (int slot = 0; slot < REWARDS_PER_PAGE && start + slot < session.eligible.size(); slot++) {
+            RewardDefinition reward = session.eligible.get(start + slot);
+            session.inventory.setItem(slot, choiceDisplay(session, reward));
+        }
+        if (session.page > 0) {
+            session.inventory.setItem(PREVIOUS_SLOT, GuiItems.item(Material.ARROW,
+                    core.messages().parse("&fPrevious Rewards"), List.of()));
+        }
+        session.inventory.setItem(PAGE_INFO_SLOT, GuiItems.item(Material.BOOK,
+                core.messages().parse("&fRewards Page &d" + (session.page + 1) + "&f/&d" + (maxPage(session) + 1)), List.of(
+                        core.messages().parse("&7Rewards: &f" + session.eligible.size()),
+                        core.messages().parse("&7Selections carry across pages."))));
+        if (session.page < maxPage(session)) {
+            session.inventory.setItem(NEXT_SLOT, GuiItems.item(Material.ARROW,
+                    core.messages().parse("&fNext Rewards"), List.of()));
         }
 
         session.inventory.setItem(48, GuiItems.item(Material.BUCKET,
@@ -275,6 +304,10 @@ public final class ChoiceOpeningService implements Listener {
                                 + (session.requiredChoices == 1 ? "." : "s.")),
                         core.messages().parse("&7Selected: &f" + session.selected.size() + "&7/&f" + session.requiredChoices),
                         core.messages().parse(ready ? "&eClick to consume the key and claim." : "&8The key has not been consumed."))));
+    }
+
+    private int maxPage(ChoiceSession session) {
+        return Math.max(0, (session.eligible.size() - 1) / REWARDS_PER_PAGE);
     }
 
     private ItemStack choiceDisplay(ChoiceSession session, RewardDefinition reward) {
@@ -356,6 +389,7 @@ public final class ChoiceOpeningService implements Listener {
         private final boolean bypassKey;
         private final Inventory inventory;
         private final Set<String> selected = new LinkedHashSet<>();
+        private int page;
 
         private ChoiceSession(Player player, CrateDefinition crate, List<RewardDefinition> eligible,
                               int requiredChoices, boolean requireHeldKey, boolean bypassKey, Inventory inventory) {

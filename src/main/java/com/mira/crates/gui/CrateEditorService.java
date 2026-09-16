@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class CrateEditorService {
     private static final int REWARD_FIRST_SLOT = 27;
-    private static final int REWARD_SLOTS = 18;
+    private static final int REWARDS_PER_PAGE = 18;
     private static final double CHANCE_TOLERANCE = 0.001D;
 
     private final MiraCore core;
@@ -107,11 +107,6 @@ public final class CrateEditorService {
             core.messages().send(player, "&cCommand cannot be blank. Type the console command in chat.");
             return;
         }
-        if (draft.rewards.size() >= REWARD_SLOTS) {
-            core.messages().send(player, "&cThis crate already has the maximum number of editable rewards.");
-            openEditor(player);
-            return;
-        }
         draft.rewards.add(DraftReward.command("&fCommand Reward", command, Material.PAPER,
                 0.0D, nextRewardId(draft, "command"), defaultRarityId()));
         int index = draft.rewards.size() - 1;
@@ -145,7 +140,7 @@ public final class CrateEditorService {
         reward.displayName = containsLegacyColour(name) ? name : "&f" + name;
         reward.refreshCommandPaper();
         core.messages().send(player, "&aCommand reward name set to " + reward.displayName + "&a.");
-        openEditor(player);
+        openEditor(player, index / REWARDS_PER_PAGE);
     }
 
     public void submitChatName(Player player, String message) {
@@ -197,14 +192,15 @@ public final class CrateEditorService {
         }
 
         switch (holder.type()) {
-            case CRATE_EDITOR -> handleEditorClick(player, event, draft);
+            case CRATE_EDITOR -> handleEditorClick(player, holder, event, draft);
             case CRATE_CHANCE -> handleChanceClick(player, holder, event, draft);
             default -> { }
         }
     }
 
-    private void handleEditorClick(Player player, InventoryClickEvent event, Draft draft) {
+    private void handleEditorClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event, Draft draft) {
         int slot = event.getRawSlot();
+        int page = Math.max(0, holder.page());
         if (slot == 10) {
             awaitingNameInput.add(player.getUniqueId());
             player.closeInventory();
@@ -223,20 +219,12 @@ public final class CrateEditorService {
                 core.messages().send(player, "&ePut the reward item on your cursor, then click Add Reward.");
                 return;
             }
-            if (draft.rewards.size() >= REWARD_SLOTS) {
-                core.messages().send(player, "&cThis editor currently supports up to " + REWARD_SLOTS + " item rewards per crate.");
-                return;
-            }
             ItemStack captured = cursor.clone();
             draft.rewards.add(DraftReward.item(captured, 0.0D, nextRewardId(draft, "item"), defaultRarityId()));
-            openEditor(player);
+            openEditor(player, (draft.rewards.size() - 1) / REWARDS_PER_PAGE);
             return;
         }
         if (slot == 15) {
-            if (draft.rewards.size() >= REWARD_SLOTS) {
-                core.messages().send(player, "&cThis editor currently supports up to " + REWARD_SLOTS + " editable rewards per crate.");
-                return;
-            }
             awaitingCommandInput.add(player.getUniqueId());
             player.closeInventory();
             core.messages().send(player, "&eType the console command in chat. &7Use %player% for the winner. Do not include the leading slash.");
@@ -248,27 +236,35 @@ public final class CrateEditorService {
                 return;
             }
             autoBalance(draft);
-            openEditor(player);
+            openEditor(player, page);
             return;
         }
         if (slot == 17) {
             int direction = event.getClick().isRightClick() ? -1 : 1;
             draft.winsPerOpen = Math.max(1, Math.min(5, draft.winsPerOpen + direction));
-            openEditor(player);
+            openEditor(player, page);
             return;
         }
-        if (slot >= REWARD_FIRST_SLOT && slot < REWARD_FIRST_SLOT + REWARD_SLOTS) {
-            int index = slot - REWARD_FIRST_SLOT;
+        if (slot >= REWARD_FIRST_SLOT && slot < REWARD_FIRST_SLOT + REWARDS_PER_PAGE) {
+            int index = page * REWARDS_PER_PAGE + (slot - REWARD_FIRST_SLOT);
             if (index >= draft.rewards.size()) return;
             if (event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_LEFT) {
                 cycleRarity(player, draft.rewards.get(index));
-                openEditor(player);
+                openEditor(player, page);
             } else if (event.getClick().isRightClick()) {
                 draft.rewards.remove(index);
-                openEditor(player);
+                openEditor(player, page);
             } else {
-                openChanceEditor(player, index);
+                openChanceEditor(player, index, page);
             }
+            return;
+        }
+        if (slot == 45) {
+            openEditor(player, page - 1);
+            return;
+        }
+        if (slot == 47) {
+            openEditor(player, page + 1);
             return;
         }
         if (slot == 48) {
@@ -313,17 +309,23 @@ public final class CrateEditorService {
         };
         if (delta != 0.0D) {
             reward.chance = roundChance(Math.max(0.0D, Math.min(100.0D, reward.chance + delta)));
-            openChanceEditor(player, index);
+            openChanceEditor(player, index, holder.page());
             return;
         }
-        if (event.getRawSlot() == 22) openEditor(player);
+        if (event.getRawSlot() == 22) openEditor(player, holder.page());
     }
 
     private void openEditor(Player player) {
+        openEditor(player, 0);
+    }
+
+    private void openEditor(Player player, int requestedPage) {
         Draft draft = sessions.get(player.getUniqueId());
         if (draft == null) return;
+        int maxPage = maxEditorPage(draft);
+        int page = Math.max(0, Math.min(maxPage, requestedPage));
         MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_EDITOR,
-                draft.existingId == null ? "new" : draft.existingId, 0);
+                draft.existingId == null ? "new" : draft.existingId, page);
         Inventory inventory = Bukkit.createInventory(holder, 54, core.messages().parse(
                 draft.existingId == null ? "&5Create Crate" : "&5Edit Crate &8- &f" + draft.existingId));
         holder.bind(inventory);
@@ -356,7 +358,7 @@ public final class CrateEditorService {
                 line("&7Use &f%player% &7for the winning player's name."),
                 line("&eClick, then type the command in chat."))));
         inventory.setItem(16, GuiItems.item(Material.COMPARATOR, core.messages().parse("&fAuto Balance Chances"), List.of(
-                line("&7Splits 100% evenly between all item rewards."),
+                line("&7Splits 100% evenly between all rewards."),
                 line("&7Only use this when you want to overwrite current chances."))));
         inventory.setItem(17, GuiItems.item(draft.winsPerOpen > 1 ? Material.SPECTRAL_ARROW : Material.ARROW,
                 core.messages().parse("&fWins Per Open: &d" + draft.winsPerOpen), List.of(
@@ -367,8 +369,21 @@ public final class CrateEditorService {
                         line("&eRight-click: decrease"),
                         line("&7Range: 1 to 5"))));
 
-        for (int index = 0; index < draft.rewards.size() && index < REWARD_SLOTS; index++) {
-            inventory.setItem(REWARD_FIRST_SLOT + index, rewardDisplay(draft.rewards.get(index)));
+        int start = page * REWARDS_PER_PAGE;
+        for (int offset = 0; offset < REWARDS_PER_PAGE && start + offset < draft.rewards.size(); offset++) {
+            inventory.setItem(REWARD_FIRST_SLOT + offset, rewardDisplay(draft.rewards.get(start + offset)));
+        }
+
+        if (page > 0) {
+            inventory.setItem(45, GuiItems.item(Material.ARROW, core.messages().parse("&fPrevious Rewards"), List.of(
+                    line("&7Go to page &f" + page))));
+        }
+        inventory.setItem(46, GuiItems.item(Material.BOOK, core.messages().parse("&fRewards Page &d" + (page + 1) + "&f/&d" + (maxPage + 1)), List.of(
+                line("&7Editable rewards: &f" + draft.rewards.size()),
+                line("&7Up to &f" + REWARDS_PER_PAGE + " &7rewards are shown per page."))));
+        if (page < maxPage) {
+            inventory.setItem(47, GuiItems.item(Material.ARROW, core.messages().parse("&fNext Rewards"), List.of(
+                    line("&7Go to page &f" + (page + 2)))));
         }
 
         double total = chanceTotal(draft);
@@ -387,11 +402,11 @@ public final class CrateEditorService {
         player.openInventory(inventory);
     }
 
-    private void openChanceEditor(Player player, int index) {
+    private void openChanceEditor(Player player, int index, int editorPage) {
         Draft draft = sessions.get(player.getUniqueId());
         if (draft == null || index < 0 || index >= draft.rewards.size()) return;
         DraftReward reward = draft.rewards.get(index);
-        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_CHANCE, Integer.toString(index), 0);
+        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_CHANCE, Integer.toString(index), editorPage);
         Inventory inventory = Bukkit.createInventory(holder, 27, core.messages().parse("&5Reward Chance"));
         holder.bind(inventory);
         if (reward.type == RewardType.COMMAND) {
@@ -535,6 +550,10 @@ public final class CrateEditorService {
             draft.rewards.get(i).chance = chance;
             used = roundChance(used + chance);
         }
+    }
+
+    private static int maxEditorPage(Draft draft) {
+        return Math.max(0, (draft.rewards.size() - 1) / REWARDS_PER_PAGE);
     }
 
     private static double chanceTotal(Draft draft) {
