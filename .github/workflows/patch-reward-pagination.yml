@@ -1,0 +1,169 @@
+name: Apply Reward Pagination Patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-reward-pagination.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply paginated reward editor and choice crate support
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly one match, found {count}")
+              return text.replace(old, new, 1)
+
+          editor_path = Path('src/main/java/com/mira/crates/gui/CrateEditorService.java')
+          s = editor_path.read_text()
+
+          s = replace_once(s,
+              '    private static final int REWARD_SLOTS = 18;\n',
+              '    private static final int REWARDS_PER_PAGE = 18;\n',
+              'editor page-size constant')
+
+          s = replace_once(s,
+              '''        if (draft.rewards.size() >= REWARD_SLOTS) {\n            core.messages().send(player, "&cThis crate already has the maximum number of editable rewards.");\n            openEditor(player);\n            return;\n        }\n''',
+              '',
+              'command reward hard cap')
+
+          s = replace_once(s,
+              '''        core.messages().send(player, "&aCommand reward name set to " + reward.displayName + "&a.");\n        openEditor(player);\n    }\n\n    public void submitChatName''',
+              '''        core.messages().send(player, "&aCommand reward name set to " + reward.displayName + "&a.");\n        openEditor(player, index / REWARDS_PER_PAGE);\n    }\n\n    public void submitChatName''',
+              'return to command reward page')
+
+          s = replace_once(s,
+              '            case CRATE_EDITOR -> handleEditorClick(player, event, draft);',
+              '            case CRATE_EDITOR -> handleEditorClick(player, holder, event, draft);',
+              'editor click routing')
+
+          s = replace_once(s,
+              '''    private void handleEditorClick(Player player, InventoryClickEvent event, Draft draft) {\n        int slot = event.getRawSlot();\n''',
+              '''    private void handleEditorClick(Player player, MiraInventoryHolder holder, InventoryClickEvent event, Draft draft) {\n        int slot = event.getRawSlot();\n        int page = Math.max(0, holder.page());\n''',
+              'editor click signature')
+
+          s = replace_once(s,
+              '''            if (draft.rewards.size() >= REWARD_SLOTS) {\n                core.messages().send(player, "&cThis editor currently supports up to " + REWARD_SLOTS + " item rewards per crate.");\n                return;\n            }\n            ItemStack captured = cursor.clone();\n            draft.rewards.add(DraftReward.item(captured, 0.0D, nextRewardId(draft, "item"), defaultRarityId()));\n            openEditor(player);\n''',
+              '''            ItemStack captured = cursor.clone();\n            draft.rewards.add(DraftReward.item(captured, 0.0D, nextRewardId(draft, "item"), defaultRarityId()));\n            openEditor(player, (draft.rewards.size() - 1) / REWARDS_PER_PAGE);\n''',
+              'item reward cap and post-add page')
+
+          s = replace_once(s,
+              '''        if (slot == 15) {\n            if (draft.rewards.size() >= REWARD_SLOTS) {\n                core.messages().send(player, "&cThis editor currently supports up to " + REWARD_SLOTS + " editable rewards per crate.");\n                return;\n            }\n            awaitingCommandInput.add(player.getUniqueId());\n''',
+              '''        if (slot == 15) {\n            awaitingCommandInput.add(player.getUniqueId());\n''',
+              'command add cap')
+
+          s = replace_once(s,
+              '''            autoBalance(draft);\n            openEditor(player);\n            return;\n''',
+              '''            autoBalance(draft);\n            openEditor(player, page);\n            return;\n''',
+              'auto-balance page retention')
+
+          s = replace_once(s,
+              '''            draft.winsPerOpen = Math.max(1, Math.min(5, draft.winsPerOpen + direction));\n            openEditor(player);\n            return;\n''',
+              '''            draft.winsPerOpen = Math.max(1, Math.min(5, draft.winsPerOpen + direction));\n            openEditor(player, page);\n            return;\n''',
+              'wins page retention')
+
+          s = replace_once(s,
+              '''        if (slot >= REWARD_FIRST_SLOT && slot < REWARD_FIRST_SLOT + REWARD_SLOTS) {\n            int index = slot - REWARD_FIRST_SLOT;\n            if (index >= draft.rewards.size()) return;\n            if (event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_LEFT) {\n                cycleRarity(player, draft.rewards.get(index));\n                openEditor(player);\n            } else if (event.getClick().isRightClick()) {\n                draft.rewards.remove(index);\n                openEditor(player);\n            } else {\n                openChanceEditor(player, index);\n            }\n            return;\n        }\n        if (slot == 48) {\n''',
+              '''        if (slot >= REWARD_FIRST_SLOT && slot < REWARD_FIRST_SLOT + REWARDS_PER_PAGE) {\n            int index = page * REWARDS_PER_PAGE + (slot - REWARD_FIRST_SLOT);\n            if (index >= draft.rewards.size()) return;\n            if (event.getClick() == org.bukkit.event.inventory.ClickType.SHIFT_LEFT) {\n                cycleRarity(player, draft.rewards.get(index));\n                openEditor(player, page);\n            } else if (event.getClick().isRightClick()) {\n                draft.rewards.remove(index);\n                openEditor(player, page);\n            } else {\n                openChanceEditor(player, index, page);\n            }\n            return;\n        }\n        if (slot == 45) {\n            openEditor(player, page - 1);\n            return;\n        }\n        if (slot == 47) {\n            openEditor(player, page + 1);\n            return;\n        }\n        if (slot == 48) {\n''',
+              'paged reward click mapping')
+
+          s = replace_once(s,
+              '        if (event.getRawSlot() == 22) openEditor(player);',
+              '        if (event.getRawSlot() == 22) openEditor(player, holder.page());',
+              'chance back page')
+
+          s = replace_once(s,
+              '''    private void openEditor(Player player) {\n        Draft draft = sessions.get(player.getUniqueId());\n        if (draft == null) return;\n        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_EDITOR,\n                draft.existingId == null ? "new" : draft.existingId, 0);\n''',
+              '''    private void openEditor(Player player) {\n        openEditor(player, 0);\n    }\n\n    private void openEditor(Player player, int requestedPage) {\n        Draft draft = sessions.get(player.getUniqueId());\n        if (draft == null) return;\n        int maxPage = maxEditorPage(draft);\n        int page = Math.max(0, Math.min(maxPage, requestedPage));\n        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_EDITOR,\n                draft.existingId == null ? "new" : draft.existingId, page);\n''',
+              'paged editor open')
+
+          s = replace_once(s,
+              '''        for (int index = 0; index < draft.rewards.size() && index < REWARD_SLOTS; index++) {\n            inventory.setItem(REWARD_FIRST_SLOT + index, rewardDisplay(draft.rewards.get(index)));\n        }\n\n        double total = chanceTotal(draft);\n''',
+              '''        int start = page * REWARDS_PER_PAGE;\n        for (int offset = 0; offset < REWARDS_PER_PAGE && start + offset < draft.rewards.size(); offset++) {\n            inventory.setItem(REWARD_FIRST_SLOT + offset, rewardDisplay(draft.rewards.get(start + offset)));\n        }\n\n        if (page > 0) {\n            inventory.setItem(45, GuiItems.item(Material.ARROW, core.messages().parse("&fPrevious Rewards"), List.of(\n                    line("&7Go to page &f" + page))));\n        }\n        inventory.setItem(46, GuiItems.item(Material.BOOK, core.messages().parse("&fRewards Page &d" + (page + 1) + "&f/&d" + (maxPage + 1)), List.of(\n                line("&7Editable rewards: &f" + draft.rewards.size()),\n                line("&7Up to &f" + REWARDS_PER_PAGE + " &7rewards are shown per page."))));\n        if (page < maxPage) {\n            inventory.setItem(47, GuiItems.item(Material.ARROW, core.messages().parse("&fNext Rewards"), List.of(\n                    line("&7Go to page &f" + (page + 2)))));\n        }\n\n        double total = chanceTotal(draft);\n''',
+              'render paged rewards')
+
+          s = replace_once(s,
+              '''    private void openChanceEditor(Player player, int index) {\n''',
+              '''    private void openChanceEditor(Player player, int index, int editorPage) {\n''',
+              'chance editor signature')
+
+          s = replace_once(s,
+              '''        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_CHANCE, Integer.toString(index), 0);\n''',
+              '''        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_CHANCE, Integer.toString(index), editorPage);\n''',
+              'chance holder page')
+
+          s = replace_once(s,
+              '''            reward.chance = roundChance(Math.max(0.0D, Math.min(100.0D, reward.chance + delta)));\n            openChanceEditor(player, index);\n''',
+              '''            reward.chance = roundChance(Math.max(0.0D, Math.min(100.0D, reward.chance + delta)));\n            openChanceEditor(player, index, holder.page());\n''',
+              'chance adjustment page')
+
+          s = replace_once(s,
+              '                line("&7Splits 100% evenly between all item rewards."),',
+              '                line("&7Splits 100% evenly between all rewards."),',
+              'auto-balance wording')
+
+          s = replace_once(s,
+              '''    private static double chanceTotal(Draft draft) {\n''',
+              '''    private static int maxEditorPage(Draft draft) {\n        return Math.max(0, (draft.rewards.size() - 1) / REWARDS_PER_PAGE);\n    }\n\n    private static double chanceTotal(Draft draft) {\n''',
+              'editor page helper')
+
+          editor_path.write_text(s)
+
+          choice_path = Path('src/main/java/com/mira/crates/service/ChoiceOpeningService.java')
+          c = choice_path.read_text()
+
+          c = replace_once(c,
+              '    private static final int REWARD_LIMIT = 45;\n',
+              '''    private static final int REWARDS_PER_PAGE = 45;\n    private static final int PREVIOUS_SLOT = 45;\n    private static final int PAGE_INFO_SLOT = 46;\n    private static final int NEXT_SLOT = 47;\n''',
+              'choice page constants')
+
+          c = replace_once(c,
+              '''                .filter(reward -> definitions.rarity(reward.rarityId()).isPresent())\n                .limit(REWARD_LIMIT)\n                .toList();\n''',
+              '''                .filter(reward -> definitions.rarity(reward.rarityId()).isPresent())\n                .toList();\n''',
+              'choice 45 reward hard cap')
+
+          c = replace_once(c,
+              '''        if (rawSlot < session.eligible.size()) {\n            RewardDefinition reward = session.eligible.get(rawSlot);\n            toggleSelection(session, reward);\n            render(session);\n            return;\n        }\n        if (rawSlot == 48) {\n''',
+              '''        if (rawSlot < REWARDS_PER_PAGE) {\n            int index = session.page * REWARDS_PER_PAGE + rawSlot;\n            if (index < session.eligible.size()) {\n                RewardDefinition reward = session.eligible.get(index);\n                toggleSelection(session, reward);\n                render(session);\n            }\n            return;\n        }\n        if (rawSlot == PREVIOUS_SLOT) {\n            session.page = Math.max(0, session.page - 1);\n            render(session);\n            return;\n        }\n        if (rawSlot == NEXT_SLOT) {\n            session.page = Math.min(maxPage(session), session.page + 1);\n            render(session);\n            return;\n        }\n        if (rawSlot == 48) {\n''',
+              'choice paged click mapping')
+
+          c = replace_once(c,
+              '''    private void render(ChoiceSession session) {\n        for (int slot = 0; slot < REWARD_LIMIT; slot++) session.inventory.setItem(slot, null);\n        for (int i = 0; i < session.eligible.size(); i++) {\n            RewardDefinition reward = session.eligible.get(i);\n            session.inventory.setItem(i, choiceDisplay(session, reward));\n        }\n\n        session.inventory.setItem(48, GuiItems.item(Material.BUCKET,\n''',
+              '''    private void render(ChoiceSession session) {\n        session.page = Math.max(0, Math.min(maxPage(session), session.page));\n        for (int slot = 0; slot < 48; slot++) session.inventory.setItem(slot, null);\n        int start = session.page * REWARDS_PER_PAGE;\n        for (int slot = 0; slot < REWARDS_PER_PAGE && start + slot < session.eligible.size(); slot++) {\n            RewardDefinition reward = session.eligible.get(start + slot);\n            session.inventory.setItem(slot, choiceDisplay(session, reward));\n        }\n        if (session.page > 0) {\n            session.inventory.setItem(PREVIOUS_SLOT, GuiItems.item(Material.ARROW,\n                    core.messages().parse("&fPrevious Rewards"), List.of()));\n        }\n        session.inventory.setItem(PAGE_INFO_SLOT, GuiItems.item(Material.BOOK,\n                core.messages().parse("&fRewards Page &d" + (session.page + 1) + "&f/&d" + (maxPage(session) + 1)), List.of(\n                        core.messages().parse("&7Rewards: &f" + session.eligible.size()),\n                        core.messages().parse("&7Selections carry across pages."))));\n        if (session.page < maxPage(session)) {\n            session.inventory.setItem(NEXT_SLOT, GuiItems.item(Material.ARROW,\n                    core.messages().parse("&fNext Rewards"), List.of()));\n        }\n\n        session.inventory.setItem(48, GuiItems.item(Material.BUCKET,\n''',
+              'choice render pagination')
+
+          c = replace_once(c,
+              '''    private ItemStack choiceDisplay(ChoiceSession session, RewardDefinition reward) {\n''',
+              '''    private int maxPage(ChoiceSession session) {\n        return Math.max(0, (session.eligible.size() - 1) / REWARDS_PER_PAGE);\n    }\n\n    private ItemStack choiceDisplay(ChoiceSession session, RewardDefinition reward) {\n''',
+              'choice max page helper')
+
+          c = replace_once(c,
+              '''        private final Inventory inventory;\n        private final Set<String> selected = new LinkedHashSet<>();\n''',
+              '''        private final Inventory inventory;\n        private final Set<String> selected = new LinkedHashSet<>();\n        private int page;\n''',
+              'choice session page')
+
+          choice_path.write_text(c)
+          PY
+      - name: Commit pagination changes
+        shell: bash
+        run: |
+          git config user.name "FiveS"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/main/java/com/mira/crates/gui/CrateEditorService.java src/main/java/com/mira/crates/service/ChoiceOpeningService.java
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Paginate crate reward pools beyond 18 entries"
+          git push
