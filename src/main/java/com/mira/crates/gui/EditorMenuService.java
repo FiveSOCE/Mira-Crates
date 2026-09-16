@@ -85,6 +85,7 @@ public final class EditorMenuService {
             }
             case CRATES -> handleCrateList(player, holder, event);
             case KEYS -> handleKeyList(player, holder, event);
+            case CRATE_DELETE_CONFIRM -> handleDeleteConfirm(player, holder, event);
             default -> { }
         }
     }
@@ -112,7 +113,8 @@ public final class EditorMenuService {
                     core.messages().parse("&aLeft-click: edit"),
                     core.messages().parse("&dShift-left: preview rewards"),
                     core.messages().parse("&bShift-right: toggle Random / Choice"),
-                    core.messages().parse("&eRight-click: give crate shulker"))));
+                    core.messages().parse("&eRight-click: give crate shulker"),
+                    core.messages().parse("&cPress Q: delete crate"))));
         }
         nav(inventory);
         player.openInventory(inventory);
@@ -148,7 +150,10 @@ public final class EditorMenuService {
         if (index >= values.size()) return;
         CrateDefinition crate = values.get(index);
 
-        if (event.getClick().isShiftClick() && event.getClick().isRightClick()) {
+        if (event.getClick() == org.bukkit.event.inventory.ClickType.DROP
+                || event.getClick() == org.bukkit.event.inventory.ClickType.CONTROL_DROP) {
+            openDeleteConfirm(player, crate, holder.page());
+        } else if (event.getClick().isShiftClick() && event.getClick().isRightClick()) {
             CrateOpeningMode mode = modes.toggle(crate.id());
             core.messages().send(player, "&a" + crate.id() + " opening mode set to &f" + mode.name() + "&a.");
             openCrates(player, holder.page());
@@ -160,6 +165,67 @@ public final class EditorMenuService {
         } else {
             crateEditor.openEdit(player, crate.id());
         }
+    }
+
+    private void openDeleteConfirm(Player player, CrateDefinition crate, int returnPage) {
+        int placed = locations.countForCrate(crate.id());
+        MiraInventoryHolder holder = new MiraInventoryHolder(MiraInventoryHolder.Type.CRATE_DELETE_CONFIRM,
+                crate.id(), returnPage);
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                core.messages().parse("&4Delete Crate &8- &f" + crate.id()));
+        holder.bind(inventory);
+
+        inventory.setItem(11, GuiItems.item(placed > 0 ? Material.BARRIER : Material.REDSTONE_BLOCK,
+                core.messages().parse(placed > 0 ? "&cCannot Delete Yet" : "&c&lDELETE CRATE"), List.of(
+                        core.messages().parse("&7Crate: " + crate.displayName()),
+                        core.messages().parse("&7ID: &f" + crate.id()),
+                        core.messages().parse("&7Placed copies: &f" + placed),
+                        core.messages().parse(placed > 0
+                                ? "&cRemove all deployed copies first."
+                                : "&cDeletes the crate definition and unused companion key."),
+                        core.messages().parse(placed > 0
+                                ? "&7Use /mcrates remove on deployed crates."
+                                : "&4This cannot be undone."))));
+        inventory.setItem(15, GuiItems.item(Material.LIME_DYE, core.messages().parse("&aCancel"), List.of(
+                core.messages().parse("&7Return to crate management."))));
+        player.openInventory(inventory);
+    }
+
+    private void handleDeleteConfirm(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
+        int rawSlot = event.getRawSlot();
+        if (rawSlot == 15) {
+            openCrates(player, holder.page());
+            return;
+        }
+        if (rawSlot != 11) return;
+
+        String crateId = holder.context();
+        CrateDefinition crate = definitions.crate(crateId).orElse(null);
+        if (crate == null) {
+            core.messages().send(player, "&cThat crate no longer exists.");
+            openCrates(player, holder.page());
+            return;
+        }
+
+        int placed = locations.countForCrate(crate.id());
+        if (placed > 0) {
+            core.messages().send(player, "&cCannot delete &f" + crate.id() + "&c while &f" + placed
+                    + " &cdeployed crate" + (placed == 1 ? " exists." : "s exist."));
+            core.messages().send(player, "&7Remove deployed copies first with /mcrates remove.");
+            openCrates(player, holder.page());
+            return;
+        }
+
+        if (!definitions.deleteCrate(crate.id())) {
+            core.messages().send(player, "&cCould not delete that crate.");
+            openCrates(player, holder.page());
+            return;
+        }
+
+        modes.set(crate.id(), CrateOpeningMode.RANDOM);
+        core.messages().send(player, "&aDeleted crate &f" + crate.id()
+                + "&a and removed its unused companion key data.");
+        openCrates(player, holder.page());
     }
 
     private void handleKeyList(Player player, MiraInventoryHolder holder, InventoryClickEvent event) {
