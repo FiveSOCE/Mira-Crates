@@ -1,150 +1,152 @@
 # MiraCrates
 
-## Download
+Crate, key and reward engine for the Mira Paper server suite.
 
-**Latest compatibility release: v0.3.15**
+MiraCrates provides deployable physical crates, configurable reward pools, Random and Choice opening modes, player previews, command/item rewards, multi-win openings, opening history, optional holograms and resource-pack-aware crate keys.
 
-[**Download MiraCrates-0.3.15.jar**](https://github.com/FiveSOCE/Mira-Crates/releases/download/v0.3.15/MiraCrates-0.3.15.jar)
+## Current Release
 
-[View all releases](https://github.com/FiveSOCE/Mira-Crates/releases)
+**v0.3.20** — compatible with Paper/Minecraft **1.21.11 through 26.2** using Java 21 bytecode.
 
-## v0.3.14 key and hologram fixes
+[View releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
-- Companion crate keys now use the crate display name plus ` Key` and receive distinguishing lore.
-- `/mcrates remove` removes the crate hologram immediately.
-- Startup/reload removes MiraCrates-owned holograms first, then recreates labels only for saved locations that still contain a valid crate block.
-- Stale saved crate locations without a valid crate block are removed during hologram reconciliation.
+## Requirements / Integrations
 
-# MiraCrates
-
-MiraCrates is the crate, key and reward engine for the Mira Paper server suite. It provides deployable physical crates, configurable reward pools and chances, player previews, keyed openings, admin editing tools, opening history and optional holograms.
-
-## Requirements / Dependencies
-
-- Paper 1.21.11
+- Paper 1.21.11 through 26.2
 - Java 21
-- MiraCore 0.1.0 or newer
-- Holograms optional for floating crate-name labels
-- MiraSpawners 0.1.3 or newer optional for native MiraSpawners rewards
+- MiraCore
+- Holograms optional for floating crate labels
+- MiraSpawners optional for native typed-spawner rewards
 - PlaceholderAPI optional
 - MiraNPC optional integration
+- MiraCosmetics optional for crate visuals/audio
 
-## How MiraCrates Works
+## Core Features
 
-Administrators create crate definitions containing a physical crate appearance, accepted key and reward pool. Item reward chances are edited explicitly and must total exactly 100.00% before the crate can be saved. Adding or removing a reward does not automatically rebalance existing percentages; new rewards start at 0.00% unless an administrator deliberately changes or auto-balances them.
+- physical protected shulker-based crates
+- physical and virtual key support
+- crate-specific companion keys
+- item rewards preserving full ItemStack metadata
+- console command rewards with player-facing names
+- Common, Rare, Legendary and Mythic rarity presentation
+- CS2-style horizontal opening reel
+- 1-5 sequential wins per opening
+- Random and Choice opening modes
+- unlimited practical reward-pool size through pagination
+- player reward preview GUI
+- optional holograms
+- opening history and persisted player data
+- admin create/manage/key GUI
 
-A deployed crate is represented by a protected shulker and its location is persisted. Normal players left-click a placed crate to preview rewards and right-click it with the correct key to open it. Crouch + right-click supports the quick-open path. Normal players cannot break, move or edit deployed crates. When the Holograms plugin is available, deployed crates receive a floating configured display name.
+## Reward Pools
 
-The admin GUI is organized around Create, Manage and Keys. Existing deployed crates can be converted to another crate definition with `/mcrate change <crate>`, updating the crate identity, shulker colour, accepted rewards/key data, saved location identity and hologram. Data is persisted under `plugins/MiraCrates/`, including crate definitions, keys, locations, player data and opening history.
+Random crates use explicit reward chances. Item and command rewards can coexist in the same pool. The editor requires Random-mode chances to total exactly 100.00% before the crate can be saved.
+
+Reward pools are no longer capped at 18 entries. The admin editor paginates 18 rewards at a time, while preview/opening logic continues to use the entire configured pool.
+
+Choice crates ignore percentage chances and let the player select unique eligible rewards. `Wins Per Open` controls how many choices may be made, from 1 through 5.
+
+## Opening Modes
+
+### Random
+
+- consumes a valid key
+- pre-rolls the winning reward
+- animates a CS2-style horizontal reel
+- supports 1-5 sequential reward rolls
+- each roll is delivered independently
+- reward rarity controls presentation, not probability
+
+### Choice
+
+- configured per crate
+- presents eligible rewards directly to the player
+- supports 1-5 unique selections
+- selections persist across reward pages
+- key is consumed only when the player confirms the choices
+- reward percentages are hidden/ignored
+
+## Large Reward Pools — v0.3.19
+
+The old 18-reward admin limit has been removed.
+
+- crate editing uses paginated 18-reward pages
+- Choice mode supports paginated 45-reward selection pages
+- Random, multi-win and preview flows use the full pool
+- existing crate definitions remain compatible
+
+## Crate Definition Management — v0.3.20
+
+The Manage GUI now supports safe crate-definition deletion.
+
+- press the configured drop/Q action on a crate in Manage to enter the delete confirmation flow
+- deployed copies must be removed first so saved physical crate locations are not orphaned
+- unused auto-generated companion-key data is removed with the crate definition
+
+Renaming an existing crate now also refreshes the name/lore of its auto-generated companion key. Custom/shared keys are not renamed accidentally.
+
+## Key Distribution
+
+Recent key tooling includes:
+
+```text
+/mcrates keyall <key>
+/mcrateskey <player> <key> [amount]
+```
+
+Aliases for the direct grant command include `/mkeygive` and `/mcratekey`.
+
+Physical crate keys can use the permanent resource-pack model key:
+
+```text
+mira:crate_key
+```
 
 ## Commands
 
-The entire administration command surface requires `miracrates.admin`.
+The administration surface requires `miracrates.admin` unless otherwise noted.
 
-| Command | Permission | What it does |
-| --- | --- | --- |
-| `/mcrates` | `miracrates.admin` | Opens the MiraCrates admin GUI. |
-| `/mcrates create` | `miracrates.admin` | Starts/opens crate creation. |
-| `/mcrates givecrate <crate>` | `miracrates.admin` | Gives a deployable copy of an existing crate definition. |
-| `/mcrate change <crate>` | `miracrates.admin` | Converts the deployed crate you are looking at to another existing crate definition. |
-| `/mcrates remove` | `miracrates.admin` | Removes the targeted deployed crate/admin-selected crate. |
-| `/mcrates info` | `miracrates.admin` | Shows MiraCrates runtime/configuration information. |
-| `/mcrates test` | `miracrates.admin` | Runs MiraCrates diagnostics/self-tests. |
-| `/mcrates reload` | `miracrates.admin` | Reloads MiraCrates configuration and rebuilds supported runtime state such as holograms. |
-| `/mcrates help` | `miracrates.admin` | Shows MiraCrates command help. |
+| Command | Purpose |
+| --- | --- |
+| `/mcrates` | Opens the admin GUI. |
+| `/mcrates create` | Starts/opens crate creation. |
+| `/mcrates givecrate <crate>` | Gives a deployable crate item. |
+| `/mcrates keyall <key>` | Gives one key to every online player. |
+| `/mcrateskey <player> <key> [amount]` | Console-safe targeted key grant. |
+| `/mcrate change <crate>` | Converts the deployed crate being targeted to another definition. |
+| `/mcrates remove` | Removes the targeted deployed crate. |
+| `/mcrates info` | Shows runtime/configuration information. |
+| `/mcrates test` | Runs diagnostics/self-tests. |
+| `/mcrates reload` | Reloads configuration and reconciles supported runtime state. |
 
-Aliases: `/miracrates`, `/mcrate`.
+Player interaction is GUI/block driven:
 
-Player crate interaction is not command-driven: previewing uses `miracrates.preview` and opening a crate with a valid key uses `miracrates.use`.
+- left-click deployed crate: preview rewards (`miracrates.preview`)
+- right-click with valid key: open crate (`miracrates.use`)
+- crouch + right-click: quick-open path where applicable
 
 ## Permissions
 
-| Permission | Default | What it does |
+| Permission | Default | Purpose |
 | --- | --- | --- |
-| `miracrates.admin` | OP | Allows the admin GUI, crate editor, crate/key tools, physical crate conversion/removal and diagnostics. |
-| `miracrates.use` | Everyone | Allows opening deployed crates with a valid key. |
-| `miracrates.preview` | Everyone | Allows previewing deployed crate rewards by left-clicking. |
+| `miracrates.admin` | OP | Administration, editing, grants and diagnostics. |
+| `miracrates.use` | Everyone | Opens deployed crates with valid keys. |
+| `miracrates.preview` | Everyone | Previews deployed crate rewards. |
 
+## Persistence
 
-## MiraCosmetics Integration (0.3.5)
+MiraCrates stores crate definitions, keys, deployed locations, player state and opening history under:
 
-Adds MiraCosmetics crate opening and reward-rarity visuals and fixes the stale CI artifact/release version path.
+```text
+plugins/MiraCrates/
+```
 
-## MiraCosmetics Audio Integration (0.3.6)
+Hologram reconciliation removes stale MiraCrates-owned labels and rebuilds them only for valid saved crate blocks.
 
-MiraCosmetics audio hooks add rising opening plings, rarity-specific reward sounds and a 20-block audio-only celebration for Legendary/Mythic rewards while preserving the opener's existing reward visuals.
+## Building
 
+```bash
+gradle clean build
+```
 
-## Crate Audio Audience (0.3.7)
-
-Opening, common and rare crate sounds remain actioning-player only.
-
-Legendary/mythic reward audio is now server-wide while the legendary visual effect remains scoped to the player opening the crate.
-
-
-## Crate UX Polish (0.3.9)
-
-- opening animation is now a faster CS2-style 9-item horizontal slider with the real pre-rolled reward landing in the center selector
-- reward chance is now the sole probability authority; changing rarity does not secretly alter the configured chance
-- Shift-left-click a reward in the crate editor to cycle Common, Rare, Legendary and Mythic rarity categories
-- existing reward rarity is preserved when editing and saved back correctly
-- Common and Rare use their matching reward sounds; Legendary and Mythic share the existing Legendary/Mythic celebration path
-- crate previews preserve the real reward ItemStack metadata, including custom item names, lore, enchantments, model/PDC data and other metadata
-- player previews no longer display rarity or sort by rarity
-- every visible reward always appends its exact chance percentage
-- Mythic is automatically added as a built-in rarity option on existing installations without overwriting existing rarity definitions
-
-
-## Console Command Rewards (0.3.10)
-
-The Edit Crate GUI now exposes MiraCrates' existing server-console reward backend.
-
-- click **Add Command Reward**
-- type the console command in chat without the leading slash
-- use `%player%` for the player who wins the reward
-- command rewards appear in the same reward grid as item rewards
-- left-click edits chance
-- Shift-left-click changes rarity
-- right-click removes the reward
-- existing COMMAND rewards are loaded into the editor instead of being hidden/preserved-only
-- commands execute as the server console only after the crate result is finalized
-- normal player previews show the configured command reward presentation, not the raw server command
-
-
-## Longer Synced Case Reel (0.3.11)
-
-- keeps the current fast CS2-style reel speed
-- extends the default slider from 24 to 40 movement steps
-- existing installs using the old untouched 24-step default are migrated to 40 automatically
-- manually customised slider-step values are preserved
-- opening audio is now fired once per actual reel movement instead of using the old independent timed sequence
-
-
-## Reward Naming & Command Voucher Presentation (0.3.12)
-
-- crate win chat now uses the actual ItemStack display name for item rewards, preserving custom colours/components
-- unnamed vanilla items fall back to their proper translated Minecraft item name instead of material/config placeholders
-- jackpot/rare-win broadcasts also preserve the actual reward item name
-- command rewards are displayed as PAPER rather than command blocks
-- creating a command reward now asks for the console command and then its player-facing reward name
-- command reward names support colour codes
-- command rewards can be renamed later from the reward detail/chance editor
-- the configured command reward name is used consistently in the editor, preview, slider and win chat
-
-
-## Multi-Win Sequential Openings (0.3.13)
-
-- each crate now has a **Wins Per Open** setting in Edit Crate
-- supported values are 1 through 5
-- 1 is the normal single-win mode
-- 2-5 enables sequential multi-win opening
-- left-click increases wins; right-click decreases wins
-- every win receives its own full CS2-style reel animation
-- the next reel does not begin until the previous reel has landed and delivered its reward
-- the opening GUI stays alive for the entire sequence
-- multi-win openings show the current reward roll number in the GUI
-- after the final reward completes, MiraCrates waits 3 seconds before closing the opening GUI
-- the delayed close only closes the crate GUI if it is still the player's current inventory
-- multi-win delivery failures do not refund a whole key after other rewards have already succeeded
-- if every queued reward fails, the consumed key is refunded
-- crate spin ticks now use the explicit audio-only MiraCosmetics bridge
+The output JAR is created in `build/libs/`.
