@@ -1,31 +1,33 @@
-name: Build
+name: Compatibility Builds
 
 on:
   push:
-    branches: [main]
+    branches: [main, "compat/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  compatibility-1-21-11:
+  legacy-1-18:
+    name: Legacy build (Paper 1.18.2 / Java 17)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10'
-      - name: Verify Paper 1.21.11 compatibility
-        run: gradle clean compileJava -PpaperApiVersion=1.21.11-R0.1-SNAPSHOT -PcompileJavaVersion=21 -PbytecodeJavaVersion=21 --stacktrace
+      - name: Compile legacy target
+        run: gradle clean compileJava -PpaperApiVersion=1.18.2-R0.1-SNAPSHOT -PcompileJavaVersion=17 -PbytecodeJavaVersion=17 --stacktrace
 
-  compatibility-26-2:
+  modern-26-2:
+    name: Modern build (Paper 26.2 / Java 25)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,38 +38,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.1.0'
-      - name: Verify Paper 26.2 compatibility
+      - name: Compile modern target
         run: gradle clean compileJava -PpaperApiVersion=26.2.build.121-stable -PcompileJavaVersion=25 -PbytecodeJavaVersion=25 --stacktrace
-
-  build:
-    needs: [compatibility-1-21-11, compatibility-26-2]
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10'
-      - name: Build baseline-compatible JAR
-        run: gradle clean test build -PpaperApiVersion=1.21.11-R0.1-SNAPSHOT -PcompileJavaVersion=21 -PbytecodeJavaVersion=21 --stacktrace
-      - uses: actions/upload-artifact@v4
-        with:
-          name: MiraCrates-0.3.20
-          path: build/libs/MiraCrates-0.3.20.jar
-          if-no-files-found: error
-      - name: Publish release
-        if: success() && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="v0.3.20"
-          JAR="build/libs/MiraCrates-0.3.20.jar"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$JAR" --clobber
-          else
-            gh release create "$TAG" "$JAR" --target "${{ github.sha }}" --title "MiraCrates v0.3.20" --notes "Adds safe crate-definition deletion from the Manage GUI and keeps auto-generated companion key names/lore synced when a crate is renamed."
-          fi
