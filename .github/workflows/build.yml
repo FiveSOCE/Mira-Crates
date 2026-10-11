@@ -23,8 +23,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10'
-      - name: Compile legacy target
-        run: gradle clean compileJava -PpaperApiVersion=1.18.2-R0.1-SNAPSHOT -PcompileJavaVersion=17 -PbytecodeJavaVersion=17 --stacktrace
+      - name: Build legacy target
+        run: gradle clean test build -Ptarget=legacy -PpaperApiVersion=1.18.2-R0.1-SNAPSHOT -PcompileJavaVersion=17 -PbytecodeJavaVersion=17 --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiraCrates-Legacy
+          path: build/libs/MiraCrates-Legacy-*.jar
+          if-no-files-found: error
 
   modern-26-2:
     name: Modern build (Paper 26.2 / Java 25)
@@ -38,5 +43,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.1.0'
-      - name: Compile modern target
-        run: gradle clean compileJava -PpaperApiVersion=26.2.build.121-stable -PcompileJavaVersion=25 -PbytecodeJavaVersion=25 --stacktrace
+      - name: Build modern target
+        run: gradle clean test build -Ptarget=modern -PpaperApiVersion=26.2.build.121-stable -PcompileJavaVersion=25 -PbytecodeJavaVersion=25 --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiraCrates-Modern
+          path: build/libs/MiraCrates-Modern-*.jar
+          if-no-files-found: error
