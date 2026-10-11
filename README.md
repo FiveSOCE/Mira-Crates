@@ -150,3 +150,7 @@ gradle clean build
 ```
 
 The output JAR is created in `build/libs/`.
+
+## License
+
+**All Rights Reserved.** Copyright (c) 2026 FiveSOCE. This repository is proprietary. No permission to use, copy, modify, or redistribute the software is granted without prior written permission, except as required by applicable law. See [LICENSE](LICENSE).
