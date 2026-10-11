@@ -6,20 +6,24 @@ MiraCrates provides deployable physical crates, configurable reward pools, Rando
 
 ## Current Release
 
-**v0.3.20** — compatible with Paper/Minecraft **1.21.11 through 26.2** using Java 21 bytecode.
+**v0.3.20** is the current release. A compatibility branch is being prepared for separate Legacy and Modern build targets; those targets are not yet declared production-supported until both builds and runtime checks pass.
 
 [View releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
-## Requirements / Integrations
+## Compatibility targets in development
 
-- Paper 1.21.11 through 26.2
-- Java 21
-- MiraCore
-- Holograms optional for floating crate labels
-- MiraSpawners optional for native typed-spawner rewards
-- PlaceholderAPI optional
-- MiraNPC optional integration
-- MiraCosmetics optional for crate visuals/audio
+The compatibility branch is preparing two separate artifacts from a shared codebase:
+
+| Artifact | Intended target | Java baseline |
+| --- | --- | --- |
+| `MiraCrates-Legacy` | Paper 1.18.2 and compatible legacy releases | Java 17 |
+| `MiraCrates-Modern` | Paper 26.2 and compatible modern releases | Java 25 |
+
+These are build targets under development, not a claim of confirmed compatibility. Both need successful CI builds and in-server testing before being advertised as supported.
+
+## Current integrations
+
+The current release still requires MiraCore. Holograms, MiraSpawners, PlaceholderAPI, MiraNPC, and MiraCosmetics are optional integrations where supported. Removing the required MiraCore runtime dependency is part of the standalone refactor and is not yet complete.
 
 ## Core Features
 
@@ -145,8 +149,20 @@ Hologram reconciliation removes stale MiraCrates-owned labels and rebuilds them 
 
 ## Building
 
+Modern target:
+
 ```bash
-gradle clean build
+gradle clean test build -Ptarget=modern
 ```
 
-The output JAR is created in `build/libs/`.
+Legacy target:
+
+```bash
+gradle clean test build -Ptarget=legacy
+```
+
+The output JAR is created in `build/libs/`. These targets are under development and may currently fail until version-specific API use and runtime dependencies are refactored.
+
+## License
+
+**All Rights Reserved.** Copyright (c) 2026 FiveSOCE. This repository is proprietary. No permission to use, copy, modify, or redistribute the software is granted without prior written permission, except as required by applicable law. See [LICENSE](LICENSE).
