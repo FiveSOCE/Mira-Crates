@@ -1,7 +1,7 @@
 name: MiraCrates
 version: ${version}
 main: com.mira.crates.MiraCratesPlugin
-api-version: '1.21'
+api-version: '1.18'
 authors: [FiveS]
 description: GUI-first crates with rare-win broadcasts, jackpot data and seasonal activation windows.
 depend: [MiraCore]
