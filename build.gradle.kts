@@ -4,7 +4,7 @@ import java.security.MessageDigest
 plugins { java }
 
 group = "com.mira"
-version = "0.3.20"
+version = "0.3.20-1.18.2"
 
 repositories {
     mavenCentral()
@@ -12,12 +12,12 @@ repositories {
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
 
-val miraCoreVersion = "0.4.1"
-val miraCoreSha256 = "4a20f538762bb550b4f8c359eb16945eee786ed0741ba60c0dbfc7e07e2249a9"
-val miraCoreJar = layout.projectDirectory.file("libs/MiraCore-$miraCoreVersion.jar").asFile
-val miraSpawnersVersion = "0.1.9"
-val miraSpawnersSha256 = "13850d0678a9a0b8511aa6047f520dcda42312edfabc029db85c9fb82ffbb4bc"
-val miraSpawnersJar = layout.projectDirectory.file("libs/MiraSpawners-$miraSpawnersVersion.jar").asFile
+val miraCoreVersion = "0.6.1-1.18.2"
+val miraCoreSha256 = "8abf9f26ea889ffe1648c6f35fcb7b20eef4decd870e8385fb1603120f363b95"
+val miraCoreJar = layout.projectDirectory.file("libs/MiraCore_1.18.2.jar").asFile
+val miraSpawnersVersion = "0.1.16-1.18.2"
+val miraSpawnersSha256 = "175b1412336f41b1df3e3d513a0eb56278a72d5ff54f59c6ace9ef3a10e6d85a"
+val miraSpawnersJar = layout.projectDirectory.file("libs/MiraSpawners_1.18.2.jar").asFile
 
 fun sha256(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
@@ -33,14 +33,14 @@ fun downloadVerified(url: String, target: File, expectedSha256: String) {
 
 val downloadMiraDependencies by tasks.registering {
     doLast {
-        downloadVerified("https://github.com/FiveSOCE/Mira-core/releases/download/v$miraCoreVersion/MiraCore-$miraCoreVersion.jar", miraCoreJar, miraCoreSha256)
-        downloadVerified("https://github.com/FiveSOCE/Mira-Spawners/releases/download/v$miraSpawnersVersion/MiraSpawners-$miraSpawnersVersion.jar", miraSpawnersJar, miraSpawnersSha256)
+        downloadVerified("https://github.com/FiveSOCE/Mira-core/releases/download/dev-1.18.2/MiraCore_1.18.2.jar", miraCoreJar, miraCoreSha256)
+        downloadVerified("https://github.com/FiveSOCE/Mira-Spawners/releases/download/dev-1.18.2/MiraSpawners_1.18.2.jar", miraSpawnersJar, miraSpawnersSha256)
     }
 }
 
-val paperApiVersion = providers.gradleProperty("paperApiVersion").orElse("1.21.11-R0.1-SNAPSHOT")
-val compileJavaVersion = providers.gradleProperty("compileJavaVersion").map(String::toInt).orElse(21)
-val bytecodeJavaVersion = providers.gradleProperty("bytecodeJavaVersion").map(String::toInt).orElse(21)
+val paperApiVersion = providers.gradleProperty("paperApiVersion").orElse("1.18.2-R0.1-SNAPSHOT")
+val compileJavaVersion = providers.gradleProperty("compileJavaVersion").map(String::toInt).orElse(17)
+val bytecodeJavaVersion = providers.gradleProperty("bytecodeJavaVersion").map(String::toInt).orElse(17)
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
@@ -61,7 +61,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test { useJUnitPlatform() }
 
-tasks.jar { archiveFileName.set("MiraCrates-${project.version}.jar") }
+tasks.jar { archiveFileName.set("MiraCrates_1.18.2.jar") }
 
 
 tasks.processResources {
