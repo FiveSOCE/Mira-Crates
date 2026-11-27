@@ -47,7 +47,7 @@ public final class KeyService {
             for (String line : loreLines) lore.add(core.messages().parse(line).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
         }
-        meta.setItemModel(CRATE_KEY_MODEL);
+        // Legacy resource packs use CustomModelData overrides, not item_model components.\n        // Distinct numeric ids are stable per key id; pack override definitions must match.\n        meta.setCustomModelData(100000 + Math.floorMod(key.id().hashCode(), 900000));
         meta.getPersistentDataContainer().set(keyIdKey, PersistentDataType.STRING, key.id());
         item.setItemMeta(meta);
         return Optional.of(item);
