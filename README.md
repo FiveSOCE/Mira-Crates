@@ -4,22 +4,37 @@ Crate, key and reward engine for the Mira Paper server suite.
 
 MiraCrates provides deployable physical crates, configurable reward pools, Random and Choice opening modes, player previews, command/item rewards, multi-win openings, opening history, optional holograms and resource-pack-aware crate keys.
 
-## Current Release
+## Version-specific downloads
 
-**v0.3.20** — compatible with Paper/Minecraft **1.21.11 through 26.2** using Java 21 bytecode.
+| Paper server | Java | JAR filename | Download |
+| --- | --- | --- | --- |
+| **1.18.2** | 17 | `MiraCrates_1.18.2.jar` | [Legacy development release](https://github.com/FiveSOCE/Mira-Crates/releases/tag/dev-1.18.2) |
+| **1.21.11–26.2** | Java 21 baseline, 26.2 may require Java 25 | `MiraCrates_1.21.11-26.2.jar` | [Modern release](https://github.com/FiveSOCE/Mira-Crates/releases/tag/compat-modern-1.21.11-26.2) |
 
-[View releases](https://github.com/FiveSOCE/Mira-Crates/releases)
+Only use these links once their GitHub CI builds pass and the named JARs appear as assets. **Versions 1.19–1.21.10 are not yet certified.** Neither build has undergone full in-game regression testing. Install only one MiraCrates JAR and back up its plugin folder before migration.
 
-## Requirements / Integrations
+[Legacy source](https://github.com/FiveSOCE/Mira-Crates/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Crates) · [All releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
-- Paper 1.21.11 through 26.2
-- Java 21
-- MiraCore
-- Holograms optional for floating crate labels
-- MiraSpawners optional for native typed-spawner rewards
-- PlaceholderAPI optional
-- MiraNPC optional integration
-- MiraCosmetics optional for crate visuals/audio
+## Required and optional dependencies
+
+- **Required:** Paper matching the selected build, a compatible Java runtime, and the matching **MiraCore** version.
+- **Optional:** MiraSpawners for native spawner rewards, Holograms for floating labels, PlaceholderAPI, MiraNPC and MiraCosmetics.
+- **Standalone status:** The project still declares a hard MiraCore dependency. A separately packaged JAR is not automatically dependency-free; removing MiraCore is a separate task.
+- When installing on 1.18.2, use `MiraCore_1.18.2.jar`. For native spawner rewards, use `MiraSpawners_1.18.2.jar`.
+
+## Commands and permissions
+
+| Command | Permission | Purpose |
+| --- | --- | --- |
+| `/miracrates` (aliases `/mcrates`, `/mcrate`) | `miracrates.admin` | Manage crates, create, convert, change, remove, diagnostics |
+| `/mcrateskey <player> <key> [amount]` | `miracrates.admin` | Give a player crate keys |
+| `/mkeygive`, `/mcratekey` | `miracrates.admin` | Key command aliases |
+
+| Permission | Default | Effect |
+| --- | --- | --- |
+| `miracrates.admin` | OP | Admin crate and key tools |
+| `miracrates.use` | Everyone | Open crates with valid keys |
+| `miracrates.preview` | Everyone | Preview crates with left-click |
 
 ## Core Features
 
