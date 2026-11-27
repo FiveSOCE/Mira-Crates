@@ -8,10 +8,10 @@ MiraCrates provides deployable physical crates, configurable reward pools, Rando
 
 | Paper server | Java | JAR filename | Download |
 | --- | --- | --- | --- |
-| **1.18.2** | 17 | `MiraCrates_1.18.2.jar` | [Legacy development release](https://github.com/FiveSOCE/Mira-Crates/releases/tag/dev-1.18.2) |
-| **1.21.11–26.2** | Java 21 baseline, 26.2 may require Java 25 | `MiraCrates_1.21.11-26.2.jar` | [Modern release](https://github.com/FiveSOCE/Mira-Crates/releases/tag/compat-modern-1.21.11-26.2) |
+| **1.18.2** | 17 | `MiraCrates_1.18.2.jar` | [Download legacy JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/dev-1.18.2/MiraCrates_1.18.2.jar) |
+| **1.21.11–26.2** | Java 21 baseline, 26.2 may require Java 25 | `MiraCrates_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/compat-modern-1.21.11-26.2/MiraCrates_1.21.11-26.2.jar) |
 
-Only use these links once their GitHub CI builds pass and the named JARs appear as assets. **Versions 1.19–1.21.10 are not yet certified.** Neither build has undergone full in-game regression testing. Install only one MiraCrates JAR and back up its plugin folder before migration.
+Both release assets are verified and CI builds passed. In-game validation remains outstanding. **Versions 1.19–1.21.10 are not yet certified.** Neither build has undergone full in-game regression testing. Install only one MiraCrates JAR and back up its plugin folder before migration.
 
 [Legacy source](https://github.com/FiveSOCE/Mira-Crates/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Crates) · [All releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
