@@ -61,7 +61,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test { useJUnitPlatform() }
 
-tasks.jar { archiveFileName.set("MiraCrates-${project.version}.jar") }
+tasks.jar { archiveFileName.set("MiraCrates_1.21.11-26.2.jar") }
 
 
 tasks.processResources {
