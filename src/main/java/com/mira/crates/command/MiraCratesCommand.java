@@ -402,7 +402,7 @@ public final class MiraCratesCommand implements TabExecutor {
     }
 
     private void sendInfo(CommandSender sender) {
-        core.messages().send(sender, "&dMiraCrates v" + plugin.getPluginMeta().getVersion());
+        core.messages().send(sender, "&dMiraCrates v" + plugin.getDescription().getVersion());
         core.messages().send(sender, "&7Crates: &f" + definitions.crates().size()
                 + " &7Keys: &f" + definitions.keys().size()
                 + " &7Rarities: &f" + definitions.rarities().size()
