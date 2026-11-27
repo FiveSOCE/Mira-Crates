@@ -94,7 +94,7 @@ public final class MiraCratesPlugin extends JavaPlugin {
 
         core.modules().setHealth(this, ModuleHealth.HEALTHY,
                 "Random/multi-win crates, choose-your-reward crates, rare-win broadcasts, jackpot data and seasonal windows ready");
-        getLogger().info("MiraCrates v" + getPluginMeta().getVersion() + " enabled with " + definitions.crates().size() + " crate definitions.");
+        getLogger().info("MiraCrates v" + getDescription().getVersion() + " enabled with " + definitions.crates().size() + " crate definitions.");
     }
 
     @Override
