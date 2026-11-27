@@ -8,8 +8,6 @@ version = "0.3.20-1.18.2"
 
 repositories {
     mavenCentral()
-    // Fallback for Kyori examination artifacts when Maven Central is intermittently unavailable.
-    maven("https://repo.loohpjames.com/repository/")
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
