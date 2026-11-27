@@ -9,9 +9,9 @@ import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Display;
-import org.bukkit.entity.TextDisplay;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.persistence.PersistentDataType;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public final class CrateHologramService {
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
@@ -75,12 +75,13 @@ public final class CrateHologramService {
         Location location = block.getLocation().add(0.5D, height, 0.5D);
         String key = blockKey(block);
 
-        block.getWorld().spawn(location, TextDisplay.class, display -> {
-            display.text(text);
-            display.setBillboard(Display.Billboard.CENTER);
-            display.setShadowed(true);
-            display.setSeeThrough(false);
-            display.setDefaultBackground(false);
+        block.getWorld().spawn(location, ArmorStand.class, display -> {
+            display.setCustomName(LegacyComponentSerializer.legacySection().serialize(text));
+            display.setCustomNameVisible(true);
+            display.setInvisible(true);
+            display.setMarker(true);
+            display.setSmall(true);
+            display.setGravity(false);
             display.setPersistent(true);
             display.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, (byte) 1);
             display.getPersistentDataContainer().set(blockKey, PersistentDataType.STRING, key);
@@ -89,7 +90,7 @@ public final class CrateHologramService {
 
     public void remove(Block block) {
         String key = blockKey(block);
-        for (TextDisplay display : block.getWorld().getEntitiesByClass(TextDisplay.class)) {
+        for (ArmorStand display : block.getWorld().getEntitiesByClass(ArmorStand.class)) {
             String stored = display.getPersistentDataContainer().get(blockKey, PersistentDataType.STRING);
             if (key.equals(stored)) display.remove();
         }
@@ -97,7 +98,7 @@ public final class CrateHologramService {
 
     public void removeAllOwned() {
         for (World world : Bukkit.getWorlds()) {
-            for (TextDisplay display : world.getEntitiesByClass(TextDisplay.class)) {
+            for (ArmorStand display : world.getEntitiesByClass(ArmorStand.class)) {
                 Byte marker = display.getPersistentDataContainer().get(markerKey, PersistentDataType.BYTE);
                 if (marker != null && marker == (byte) 1) display.remove();
             }
