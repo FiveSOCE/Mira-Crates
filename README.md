@@ -4,14 +4,14 @@ Crate, key and reward engine for the Mira Paper server suite.
 
 MiraCrates provides deployable physical crates, configurable reward pools, Random and Choice opening modes, player previews, command/item rewards, multi-win openings, opening history, optional holograms and resource-pack-aware crate keys.
 
-## Version-specific downloads
+## Downloads and compatibility
 
-| Paper server | Java | JAR filename | Download |
+| Server target | Java | Final JAR name | Download |
 | --- | --- | --- | --- |
-| **1.18.2** | 17 | `MiraCrates_1.18.2.jar` | [Download legacy JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/dev-1.18.2/MiraCrates_1.18.2.jar) |
-| **1.21.11–26.2** | Java 21 baseline, 26.2 may require Java 25 | `MiraCrates_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/compat-modern-1.21.11-26.2/MiraCrates_1.21.11-26.2.jar) |
+| **Paper 1.18.2** | 17 | `MiraCrates_1.18.2.jar` | [Download 1.18.2 JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/dev-1.18.2/MiraCrates_1.18.2.jar) |
+| **Paper 1.21.11–26.2** | Java 21 baseline; Paper 26.2 may require Java 25 | `MiraCrates_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/compat-modern-1.21.11-26.2/MiraCrates_1.21.11-26.2.jar) |
 
-Both release assets are verified and CI builds passed. In-game validation remains outstanding. **Versions 1.19–1.21.10 are not yet certified.** Neither build has undergone full in-game regression testing. Install only one MiraCrates JAR and back up its plugin folder before migration.
+Select only one JAR matching the server version. Published builds require in-game validation for full feature compatibility.
 
 [Legacy source](https://github.com/FiveSOCE/Mira-Crates/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Crates) · [All releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -158,10 +158,3 @@ plugins/MiraCrates/
 
 Hologram reconciliation removes stale MiraCrates-owned labels and rebuilds them only for valid saved crate blocks.
 
-## Building
-
-```bash
-gradle clean build
-```
-
-The output JAR is created in `build/libs/`.
