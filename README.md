@@ -11,7 +11,10 @@ MiraCrates provides deployable physical crates, configurable reward pools, Rando
 | **Paper 1.18.2** | 17 | `MiraCrates_1.18.2.jar` | [Download 1.18.2 JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/dev-1.18.2/MiraCrates_1.18.2.jar) |
 | **Paper 1.21.11–26.2** | Java 21 baseline; Paper 26.2 may require Java 25 | `MiraCrates_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Crates/releases/download/compat-modern-1.21.11-26.2/MiraCrates_1.21.11-26.2.jar) |
 
-Select only one JAR matching the server version. Published builds require in-game validation for full feature compatibility.
+
+**Build status:** Download links above identify published version-specific artifacts where available. Where only GitHub Actions or Releases is listed, a direct version-specific JAR has not been verified. Compilation does not establish in-game compatibility; intermediate versions 1.19–1.21.10 are not verified unless specifically documented.
+
+**Installation:** Back up the plugin's data directory, remove older copies of this plugin and install only the JAR matching your server version. Never install both builds together.
 
 [Legacy source](https://github.com/FiveSOCE/Mira-Crates/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Crates) · [All releases](https://github.com/FiveSOCE/Mira-Crates/releases)
 
@@ -157,4 +160,3 @@ plugins/MiraCrates/
 ```
 
 Hologram reconciliation removes stale MiraCrates-owned labels and rebuilds them only for valid saved crate blocks.
-
